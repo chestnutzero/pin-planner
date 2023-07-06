@@ -2,8 +2,7 @@
 <html>
 
 <head>
-    <title>Challenge Lock Planner</title>
-    <h1>Pin visualizer</h1>
+    <title>Pin Visualizer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@600&display=swap" rel="stylesheet">
@@ -12,8 +11,25 @@
 </head>
 
 <body>
+    <div id="instructions" hidden>
+        <p>Instructions: <br>
+            To move pins, click a pin to select it, then click where you want it to go
+            <br>
+            Add chambers with the button - they'll be populated with a randomly sized key and driver pin.
+            <br>
+            Resize pins using the + and - buttons after selecting a pin.
+            <br>
+            Once selected, you can edit pins and move their points around or create new points by clicking anywhere on the pin
+            <br>
+            You can export a selected pin and copy the pin definition from the text box below. Then share it or add it into your other pinning visualizations by importing
+            <br>
+            Option/alt-click a pin, chamber, or point on pin to delete it.
+            <br><br>
+            All changes are saved automatically in the URL, which is long-lived (no promises though) and shareable.
+        </p>
+    </div>
+    <button type="button" id="toggle-instructions">Show instructions</button>
     <canvas id="cl"></canvas>
-    <br>
     <div id="options">
         <button type="button" id="add-chamber">Add chamber</button>
         <button type="button" id="reset">Reset</button>

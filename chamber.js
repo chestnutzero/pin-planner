@@ -124,11 +124,11 @@ export class Pin {
         pin2.pinIdx = tmp;
     }
 
-    static keyPin(pinHeight, chamferSizeUnits = .4, angleCutHeightUnits = 1.6) {
+    static keyPin(pinHeight, chamferSizeUnits = .2, angleCutHeightUnits = 1.4) {
         return new KeyPin(pinHeight, chamferSizeUnits, angleCutHeightUnits);
     }
 
-    static standardDriver(pinHeight, chamferSizeUnits = .4) {
+    static standardDriver(pinHeight, chamferSizeUnits = .2) {
         return new StandardDriver(pinHeight, chamferSizeUnits);
     }
 }

@@ -263,6 +263,7 @@ function redraw() {
 }
 
 function setMirroredEditor(enabled) {
+    console.log("Mirrored editor toggled: s", enabled);
     mirroredEditor = enabled;
 }
 

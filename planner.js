@@ -176,7 +176,8 @@ document.getElementById("decrease-pin-height").addEventListener("click", () => {
 });
 
 document.getElementById("mirrored-editor").addEventListener("change", event => {
-    PinEditor.setMirroredEditor(event.checked);
+    console.log(event);
+    PinEditor.setMirroredEditor(event.target.checked);
 });
 
 document.getElementById("export-pin").addEventListener("click", () => {
@@ -195,6 +196,12 @@ document.getElementById("import-pin").addEventListener("click", () => {
     }
     chamber.addPin(newPin);
     redraw();
+});
+
+document.getElementById("toggle-instructions").addEventListener("click", () => {
+    let instructions = document.getElementById("instructions");
+    let hidden = instructions.toggleAttribute("hidden");
+    document.getElementById("toggle-instructions").textContent = hidden ? "Show instructions" : "Hide instructions";
 });
 
 function onPinEditorExit() {
