@@ -41,8 +41,8 @@ window.addEventListener("load", setCanvasSize);
 
 document.getElementById("add-chamber").addEventListener("click", () => {
     const chamber = addChamber(new Chamber([]));
-    chamber.addPin(Pin.keyPin(Math.ceil(Math.random() * 10)));
-    chamber.addPin(Pin.standardDriver(Math.ceil(Math.random() * 10)));
+    chamber.addPin(Pin.keyPin(Math.ceil(Math.random() * 7) + 3));
+    chamber.addPin(Pin.standardDriver(Math.ceil(Math.random() * 5) + 5));
     redraw();
 });
 
