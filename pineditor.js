@@ -2,6 +2,7 @@ import {Pin} from "./chamber.js";
 import {drawPin, screenToCanvas} from "./renderer.js";
 import UrlManager from "./urlmanager.js";
 import {chambers} from "./planner.js";
+import * as Colors from "./colors.js";
 
 const canvas = document.getElementById("cl");
 const ctx = canvas.getContext("2d");
@@ -76,7 +77,7 @@ function handleClick(event) {
 
     const normalizedMouseX = Math.min(Math.max((mouseCoords[0] - pinRect.x) / pinRect.width, 0), 1);
     const normalizedMouseY = Math.min(Math.max((mouseCoords[1] - pinRect.y) / pinRect.height, 0), 1);
-    const { nearest, pointIdx, isExistingPoint } = closestPointToPos(normalizedMouseX, normalizedMouseY);
+    let { nearest, pointIdx, isExistingPoint } = closestPointToPos(normalizedMouseX, normalizedMouseY);
 
     if (event.altKey) {
         console.log("Alt key held");
@@ -96,11 +97,19 @@ function handleClick(event) {
 
     if (!isExistingPoint) {
         // Need to create a new point
-        selectedMirroredPointIdx = currentPin.points.length + 1 - pointIdx;
+        console.log("Current points: %d", currentPin.points.length);
         currentPin.points.splice(pointIdx, 0, nearest);
+        console.log("Created point at index %d, now points: %d", pointIdx, currentPin.points.length);
         if (mirroredEditor) {
+            if (pointIdx >= currentPin.points.length / 2) {
+                pointIdx++;
+            }            
+            selectedMirroredPointIdx = currentPin.points.length - pointIdx;
             const mirroredNearest = [1 - nearest[0], nearest[1]];
             currentPin.points.splice(selectedMirroredPointIdx, 0, mirroredNearest);
+            console.log("Created mirrored point at %d, now points: %d", selectedMirroredPointIdx, currentPin.points.length);
+        } else {
+            selectedMirroredPointIdx = null;
         }
     } else if (mirroredEditor) {
         selectedMirroredPointIdx = currentPin.points.length - 1 - pointIdx;
@@ -236,20 +245,25 @@ function redraw() {
     const widthToHeightRatio = 4 / currentPin.pinHeight;
     let w = Math.min(canvas.width, h * widthToHeightRatio) - 10;
     h = (w / widthToHeightRatio);
+
     pinRect = new DOMRect(((canvas.width - w) / 2), (canvas.height - h) / 2, w, h);
+
     displayRect = new DOMRect(pinRect.x - 20, pinRect.y - 20, pinRect.width + 40, pinRect.height + 40);
-    ctx.clearRect(displayRect.x, displayRect.y, displayRect.width, displayRect.height);
-    ctx.fillStyle = "green";
+
+    ctx.fillStyle = "grey";
+    ctx.fillRect(displayRect.x, displayRect.y, displayRect.width, displayRect.height);
+
+    ctx.fillStyle = "white";
+    ctx.fillRect(pinRect.x, pinRect.y, pinRect.width, pinRect.height);
+
+    ctx.fillStyle = Colors.pinFillColor;
     ctx.lineWidth = 1;
     ctx.strokeStyle = `rgba(0, 0, 0, .35)`;
     drawPin(currentPin, pinRect.x, pinRect.y, pinRect.width, pinRect.height);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = `rgba(0, 0, 0, .35)`;
-    ctx.strokeRect(pinRect.x, pinRect.y, pinRect.width, pinRect.height);
 }
 
 function setMirroredEditor(enabled) {
     mirroredEditor = enabled;
 }
 
-export default {handleClick, openPinEditor, closePinEditor, isPinEditorOpen, handleMouseMove, setMirroredEditor};
+export default {handleClick, openPinEditor, closePinEditor, isPinEditorOpen, handleMouseMove, setMirroredEditor, redraw};

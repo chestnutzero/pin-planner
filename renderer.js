@@ -1,4 +1,5 @@
 import {Chamber, Pin} from "./chamber.js";
+import * as Colors from "./colors.js";
 
 const canvas = document.getElementById("cl");
 const ctx = canvas.getContext("2d");
@@ -7,6 +8,10 @@ const chamberPaddingRatio = .1;
 // % of chamber height that one unit of pin height takes up
 // 20 units per chamber
 const pinUnitHeightRatio = .05;
+const outlineWidth = 5;
+const pinPaddingX = 2;
+const pinPaddingY = 2;
+
 
 // We do a lot of bounds checking, this is just convenience
 Object.defineProperty(DOMRect.prototype, 'contains', {
@@ -23,24 +28,29 @@ function drawChamber(chamber, chamberNum, chamberWidth, chamberHeight) {
     let w = chamberWidth - (paddingSize * 2);
     let h = chamberHeight;
     if (chamber.highlighted) {
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = "solid 3px black";
+        ctx.fillStyle = Colors.chamberHighlightColor;
     } else {
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = "solid 1px black";
+        ctx.fillStyle = Colors.chamberFillColor;
     }
-    ctx.strokeRect(x, y, w, h);
+    ctx.fillRect(x, y, w, h);
 
     let currentHeight = 0;
-    let idx = 0;
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 3;
     chamber.pinStack.forEach(pin => {
-        ctx.fillStyle = `hsl(${150 + pin.pinHeight * 10 + (idx++ * 7)}, 50%, 50%)`
+        // ctx.fillStyle = `hsl(${150 + pin.pinHeight * 10 + (idx++ * 7)}, 50%, 50%)`
+        // ctx.fillStyle = "#8a857c";
         let pinHeight = pin.pinHeight * chamberHeight * pinUnitHeightRatio;
-        drawPin(pin, x, currentHeight, w, pinHeight);
+        drawPinPath(pin, x + pinPaddingX, currentHeight + pinPaddingY, w - pinPaddingX * 2, pinHeight - pinPaddingY);
+        if (pin.highlighted) {
+            ctx.strokeStyle = Colors.pinHighlightColor;
+            ctx.lineWidth = outlineWidth * 2;
+            ctx.stroke();
+        }
+        ctx.fillStyle = Colors.pinFillColor;
+        ctx.fill();
         currentHeight += pinHeight;
     });
+
+    ctx.lineWidth = outlineWidth;
     chamber.lastRenderMetadata = new DOMRect(x, y, w, h);
 }
 
@@ -48,6 +58,11 @@ function drawChamber(chamber, chamberNum, chamberWidth, chamberHeight) {
 // Origin starting at bottom left corner
 // will be rescaled to w by h rect at (x, y)
 function drawPin(pin, x, y, w, h) {
+    drawPinPath(pin, x, y, w, h);
+    ctx.fill();
+}
+
+function drawPinPath(pin, x, y, w, h) {
     ctx.moveTo(x, y);
     ctx.beginPath();
     pin.points.forEach(point => {
@@ -56,10 +71,6 @@ function drawPin(pin, x, y, w, h) {
         ctx.lineTo(px, py);
     });
     ctx.closePath();
-    ctx.fill();
-    if (pin.highlighted) {
-        ctx.stroke();
-    }
     pin.lastRenderMetadata = new DOMRect(x, y, w, h);
 }
 

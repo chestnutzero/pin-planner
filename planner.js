@@ -31,12 +31,15 @@ function setCanvasSize() {
     ctx.transform(1, 0, 0, -1, 0, canvas.height)
     console.log("resizing");
     redraw();
+    if (PinEditor.isPinEditorOpen()) {
+        PinEditor.redraw();
+    }
 }
 
 window.addEventListener("resize", setCanvasSize);
 window.addEventListener("load", setCanvasSize);
 
-document.getElementById("add-pin").addEventListener("click", () => {
+document.getElementById("add-chamber").addEventListener("click", () => {
     const chamber = addChamber(new Chamber([]));
     chamber.addPin(Pin.keyPin(Math.ceil(Math.random() * 10)));
     chamber.addPin(Pin.standardDriver(Math.ceil(Math.random() * 10)));

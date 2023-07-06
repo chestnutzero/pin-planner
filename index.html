@@ -6,7 +6,7 @@
     <h1>Pin visualizer</h1>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./style.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
@@ -15,22 +15,24 @@
     <canvas id="cl"></canvas>
     <br>
     <div id="options">
-        <button type="button" id="add-pin">Add chamber</button>
+        <button type="button" id="add-chamber">Add chamber</button>
         <button type="button" id="reset">Reset</button>
         <button type="button" id="edit-pin" class="pin-specific-btn" disabled>Edit pin</button>
         <script type="module" src="planner.js"></script>
-        <div>
+        <div id="pin-height-control">
             <button type="button" id="decrease-pin-height">-</button>
             Pin height: <span id="pin-height">n/a</span>
             <button type="button" id="increase-pin-height">+</button>
         </div>
-        <label for="mirrored-editor">Symmetrical pin editing</label>
-        <input type="checkbox" name="mirrored-editor" id="mirrored-editor" checked>
+        <div id="mirroring-control">
+            <label for="mirrored-editor">Symmetrical pin editing</label>
+            <input type="checkbox" name="mirrored-editor" id="mirrored-editor" checked>
+        </div>
     </div>
     <br>
     <div id="import-export">
-        <input type="button" value="Export pin" id="export-pin" class="pin-specific-btn" disabled>
-        <input type="button" value="Import pin" id="import-pin">
+    <button type="button" id="export-pin" class="pin-specific-btn" disabled>Export pin</button>
+        <button type="button" id="import-pin">Import pin</button>
         <br>
         <textarea name="pin-def" id="pin-def" cols="30" rows="10"></textarea>
     </div>
