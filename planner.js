@@ -4,6 +4,7 @@ import {redrawChambers, findPinUnderCoordinates} from "./renderer.js";
 import PinEditor from "./pineditor.js";
 
 const canvas = document.getElementById("cl");
+const ctx = canvas.getContext("2d");
 const selectedPinHeight = document.getElementById("pin-height");
 let chambers;
 let selectedChamber, selectedPin;
@@ -15,22 +16,30 @@ function addChamber(chamber) {
     return chamber;
 }
 
-function addPin(chamber, pin) {
-    const idx = chamber.pinStack.push(pin) - 1;
-    pin.chamber = chamber;
-    pin.pinIdx = idx;
+function removeChamber(chamberIdx) {
+    chambers.splice(chamberIdx, 1);
+    for (let i=0; i<chambers.length; i++) {
+        chambers[i].chamberIdx = i;
+    }
 }
 
-function replacePin(oldPin, newPin) {
-    oldPin.chamber.pinStack[oldPin.pinIdx] = newPin;
-    newPin.chamber = oldPin.chamber;
-    newPin.pinIdx = oldPin.pinIdx;
+function setCanvasSize() {
+    canvas.width = window.innerWidth * .9;
+    canvas.height = Math.max(Math.min(canvas.width * .5, window.innerWidth * .8), 400);
+    // Having pin points use bottom left origin and canvas us top left origin is annoying
+    // Just use bottom left origin for everything
+    ctx.transform(1, 0, 0, -1, 0, canvas.height)
+    console.log("resizing");
+    redraw();
 }
+
+window.addEventListener("resize", setCanvasSize);
+window.addEventListener("load", setCanvasSize);
 
 document.getElementById("add-pin").addEventListener("click", () => {
     const chamber = addChamber(new Chamber([]));
-    addPin(chamber, Pin.keyPin(Math.ceil(Math.random() * 10)));
-    addPin(chamber, Pin.standardDriver(Math.ceil(Math.random() * 10)));
+    chamber.addPin(Pin.keyPin(Math.ceil(Math.random() * 10)));
+    chamber.addPin(Pin.standardDriver(Math.ceil(Math.random() * 10)));
     redraw();
 });
 
@@ -41,6 +50,18 @@ document.getElementById("reset").addEventListener("click", () => {
     redraw();
 });
 
+function selectPin(pin) {
+    resetPinSelection();
+    pin.highlighted = true;
+    selectedChamber = pin.chamber;
+    selectedPin = pin;
+
+    let elements = document.getElementsByClassName("pin-specific-btn");
+    for (let i=0; i<elements.length; i++) {
+        elements.item(i).removeAttribute("disabled");
+    }
+}
+
 function resetPinSelection() {
     if (selectedPin) {
         selectedPin.highlighted = false;
@@ -50,7 +71,10 @@ function resetPinSelection() {
     }
     selectedPin = null;
     selectedChamber = null;
-    document.getElementById("edit-pin").setAttribute("disabled", true);
+    let elements = document.getElementsByClassName("pin-specific-btn");
+    for (let i=0; i<elements.length; i++) {
+        elements.item(i).setAttribute("disabled", true);
+    }
     selectedPinHeight.textContent = "n/a";
 }
 
@@ -65,6 +89,19 @@ canvas.addEventListener("click", event => {
     const mouseY = canvasBounds.height - (event.clientY - canvasBounds.top);
     let { chamber, pin } = findPinUnderCoordinates(chambers, mouseX, mouseY);
 
+    if (event.altKey) {
+        // delete whatever's being clicked
+        if (pin) {
+            chamber.removePin(pin.pinIdx);
+            redraw();
+            return;
+        } else if (chamber) {
+            removeChamber(chamber.chamberIdx);
+            redraw();
+            return;
+        }
+    }
+
     if (pin) {
         if (selectedPin) {
             if (selectedPin != pin) {
@@ -75,10 +112,7 @@ canvas.addEventListener("click", event => {
             return;
         }
 
-        resetPinSelection();
-        pin.highlighted = true;
-        selectedChamber = chamber;
-        selectedPin = pin;
+        selectPin(pin);
         redraw();
     } else if (chamber) {
         if (selectedPin) {
@@ -114,6 +148,10 @@ canvas.addEventListener("mousemove", event => {
 
 document.getElementById("edit-pin").addEventListener("click", () => {
     if (selectedPin && !PinEditor.isPinEditorOpen()) {
+        // Convert pin to raw pin for editing
+        const rawPin = selectedPin.asRawPin();
+        selectedChamber.replacePin(selectedPin.pinIdx, rawPin);
+        selectPin(rawPin);
         PinEditor.openPinEditor(selectedPin, onPinEditorExit);
     } else if (PinEditor.isPinEditorOpen()) {
         PinEditor.closePinEditor();
@@ -136,7 +174,25 @@ document.getElementById("decrease-pin-height").addEventListener("click", () => {
 
 document.getElementById("mirrored-editor").addEventListener("change", event => {
     PinEditor.setMirroredEditor(event.checked);
-})
+});
+
+document.getElementById("export-pin").addEventListener("click", () => {
+    if (selectedPin) {
+        document.getElementById("pin-def").value = selectedPin.serialize();
+    }
+});
+
+document.getElementById("import-pin").addEventListener("click", () => {
+    const newPin = Pin.deserialize(document.getElementById("pin-def").value);
+    let chamber;
+    if (selectedChamber) {
+        chamber = selectedChamber;
+    } else {
+        chamber = addChamber(new Chamber([]));
+    }
+    chamber.addPin(newPin);
+    redraw();
+});
 
 function onPinEditorExit() {
     redraw();

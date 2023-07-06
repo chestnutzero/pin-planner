@@ -2,12 +2,6 @@ import {Chamber, Pin} from "./chamber.js";
 
 const canvas = document.getElementById("cl");
 const ctx = canvas.getContext("2d");
-// Having pin points use bottom left origin and canvas us top left origin is annoying
-// Just use bottom left origin for everything
-ctx.transform(1, 0, 0, -1, 0, canvas.height)
-
-const width = canvas.width;
-const height = canvas.height;
 export const chamberHeightToWidthRatio = 4;
 const chamberPaddingRatio = .1;
 // % of chamber height that one unit of pin height takes up
@@ -42,7 +36,7 @@ function drawChamber(chamber, chamberNum, chamberWidth, chamberHeight) {
     ctx.strokeStyle = "black";
     ctx.lineWidth = 3;
     chamber.pinStack.forEach(pin => {
-        ctx.fillStyle = `hsl(${30 + idx++ * 40}, 40%, 60%)`
+        ctx.fillStyle = `hsl(${150 + pin.pinHeight * 10 + (idx++ * 7)}, 50%, 50%)`
         let pinHeight = pin.pinHeight * chamberHeight * pinUnitHeightRatio;
         drawPin(pin, x, currentHeight, w, pinHeight);
         currentHeight += pinHeight;
@@ -71,7 +65,7 @@ function drawPin(pin, x, y, w, h) {
 
 // Coordinates use bottom left as origin for ease of use
 function findPinUnderCoordinates(chambers, x, y) {
-    console.log("Searching chambers ", chambers, "for coordinates");
+    console.log("Searching chambers ", chambers, "for coordinates", x, y);
 
     if (chambers.length == 0) {
         return {};
@@ -96,14 +90,16 @@ function findPinUnderCoordinates(chambers, x, y) {
         pinIdx++;
     }
 
+    console.log("Found match: %s, pin: %s", foundPin, pinIdx);
+
     return {chamber, pin:foundPin, pinIdx, chamberIdx};
 }
 
 function redrawChambers(chambers) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    let chamberWidth = width / chambers.length;
-    const chamberHeight = Math.min(chamberWidth * chamberHeightToWidthRatio, height);
+    let chamberWidth = canvas.width / chambers.length;
+    const chamberHeight = Math.min(chamberWidth * chamberHeightToWidthRatio, canvas.height);
     chamberWidth = chamberHeight / chamberHeightToWidthRatio;
 
     let chamberNum = 0;

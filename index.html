@@ -1,16 +1,24 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Challenge Lock Planner</title>
-        <h1>Pin visualizer</h1>
-    </head>
-    <body>
-        <canvas id="cl" width=400 height=200 style="border: 1px solid black;"></canvas>
-        <br>
+
+<head>
+    <title>Challenge Lock Planner</title>
+    <h1>Pin visualizer</h1>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+    <canvas id="cl"></canvas>
+    <br>
+    <div id="options">
         <button type="button" id="add-pin">Add chamber</button>
         <button type="button" id="reset">Reset</button>
-        <button type="button" id="edit-pin" disabled>Edit pin</button>
-        <script type = "module" src="planner.js"></script>
+        <button type="button" id="edit-pin" class="pin-specific-btn" disabled>Edit pin</button>
+        <script type="module" src="planner.js"></script>
         <div>
             <button type="button" id="decrease-pin-height">-</button>
             Pin height: <span id="pin-height">n/a</span>
@@ -18,5 +26,14 @@
         </div>
         <label for="mirrored-editor">Symmetrical pin editing</label>
         <input type="checkbox" name="mirrored-editor" id="mirrored-editor" checked>
-    </body>
+    </div>
+    <br>
+    <div id="import-export">
+        <input type="button" value="Export pin" id="export-pin" class="pin-specific-btn" disabled>
+        <input type="button" value="Import pin" id="import-pin">
+        <br>
+        <textarea name="pin-def" id="pin-def" cols="30" rows="10"></textarea>
+    </div>
+</body>
+
 </html>

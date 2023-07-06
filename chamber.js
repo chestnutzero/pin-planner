@@ -1,3 +1,5 @@
+import {chamberHeightToWidthRatio} from "./renderer.js";
+
 export class Chamber {
     constructor(pinStack = [], lastRenderMetadata = null, highlighted = false, chambers, chamberIdx=null) {
         this.pinStack = pinStack;
@@ -13,6 +15,25 @@ export class Chamber {
         return JSON.stringify(
             this.pinStack.map(pin => pin.serialize())
         );
+    }
+
+    removePin(pinIdx) {
+        this.pinStack.splice(pinIdx, 1);
+        for (let i=0; i<this.pinStack.length; i++) {
+            this.pinStack[i].pinIdx = i;
+        }
+    }
+
+    addPin(pin) {
+        let idx = this.pinStack.push(pin) - 1;
+        pin.pinIdx = idx;
+        pin.chamber = this;
+    }
+
+    replacePin(pinIdx, newPin) {
+        this.pinStack[pinIdx] = newPin;
+        newPin.pinIdx = pinIdx;
+        newPin.chamber = this;
     }
 
     static deserialize(pinStackJson) {
@@ -38,10 +59,9 @@ export class Pin {
     // Pin is an array of points normalized to 1x1 rect
     // Origin starting at bottom left corner
     // pinHeight is in units, where one unit is 1/20th of the chamber
-    constructor(points, pinHeight, serOverride=null, lastRenderMetadata=null, highlighted=false, chamber, pinIdx) {
+    constructor(points, pinHeight, lastRenderMetadata=null, highlighted=false, chamber, pinIdx) {
         this.points = points;
         this.pinHeight = pinHeight;
-        this.serOverride = serOverride;
         this.lastRenderMetadata = lastRenderMetadata;
         this.highlighted = highlighted;
         // Parent chamber
@@ -50,11 +70,11 @@ export class Pin {
         this.pinIdx = pinIdx;
     }
 
-    serialize() {
-        if (this.serOverride) {
-            return this.serOverride;
-        }
+    asRawPin() {
+        return new Pin(this.points, this.pinHeight, this.lastRenderMetadata, this.highlighted, this.chamber, this.pinIdx);
+    }
 
+    serialize() {
         return JSON.stringify({points:this.points, pinHeight:this.pinHeight}, (key, val) => {
             return (val && val.toFixed) ? Number(val.toFixed(4)) : val;
         });
@@ -83,12 +103,15 @@ export class Pin {
     }
 
     moveToChamber(chamber) {
-        this.chamber.pinStack.splice(this.pinIdx, 1);
-        this.pinIdx = chamber.pinStack.push(this) - 1;
-        this.chamber = chamber;
+        if (chamber == this.chamber) {
+            return;
+        }
+        this.chamber.removePin(this.pinIdx);
+        chamber.addPin(this);
     }
 
     static swap(pin1, pin2) {
+        console.log("Swapping", pin1, pin2);
         pin1.chamber.pinStack[pin1.pinIdx] = pin2;
         pin2.chamber.pinStack[pin2.pinIdx] = pin1;
 
@@ -101,24 +124,24 @@ export class Pin {
         pin2.pinIdx = tmp;
     }
 
-    static keyPin(pinHeight, chamferSizeUnits = .2, angleCutHeightUnits = 1.4) {
+    static keyPin(pinHeight, chamferSizeUnits = .4, angleCutHeightUnits = 1.6) {
         return new KeyPin(pinHeight, chamferSizeUnits, angleCutHeightUnits);
     }
 
-    static standardDriver(pinHeight, chamferSizeUnits = .2) {
+    static standardDriver(pinHeight, chamferSizeUnits = .4) {
         return new StandardDriver(pinHeight, chamferSizeUnits);
     }
 }
 
 class KeyPin extends Pin {
-    constructor(pinHeight, chamferSizeUnits = .2, angleCutHeightUnits = 1.4) {
+    constructor(pinHeight, chamferSizeUnits, angleCutHeightUnits) {
         const angleCutHeight = angleCutHeightUnits / pinHeight;
         const chamferHeight = chamferSizeUnits / pinHeight;
+        const chamferWidth = chamferSizeUnits / chamberHeightToWidthRatio;
         const pinBaseWidth = .1;
         super(
-            [[.5 - pinBaseWidth, 0], [0, angleCutHeight], [0, 1 - chamferHeight], [chamferHeight, 1], [1 - chamferHeight, 1], [1, 1 - chamferHeight], [1, angleCutHeight], [.5 + pinBaseWidth, 0]], 
-            pinHeight,
-            "k" + pinHeight);
+            [[.5 - pinBaseWidth, 0], [0, angleCutHeight], [0, 1 - chamferHeight], [chamferWidth, 1], [1 - chamferWidth, 1], [1, 1 - chamferHeight], [1, angleCutHeight], [.5 + pinBaseWidth, 0]], 
+            pinHeight);
 
         this.chamferSizeUnits = chamferSizeUnits;
         this.angleCutHeightUnits = angleCutHeightUnits;
@@ -127,20 +150,28 @@ class KeyPin extends Pin {
     withHeight(pinHeight) {
         return new KeyPin(pinHeight, this.chamferSizeUnits, this.angleCutHeightUnits);
     }
+
+    serialize() {
+        return "k" + this.pinHeight;
+    }
 }
 
 class StandardDriver extends Pin {
 
-    constructor(pinHeight, chamferSizeUnits = .2) {
+    constructor(pinHeight, chamferSizeUnits) {
         const chamferHeight = chamferSizeUnits / pinHeight;
+        const chamferWidth = chamferSizeUnits / chamberHeightToWidthRatio;
         super(
-            [[chamferHeight, 0], [0, chamferHeight], [0, 1 - chamferHeight], [chamferHeight, 1], [1 - chamferHeight, 1], [1, 1 - chamferHeight], [1, chamferHeight], [1 - chamferHeight, 0]], 
-            pinHeight,
-            "d" + pinHeight);
+            [[chamferWidth, 0], [0, chamferHeight], [0, 1 - chamferHeight], [chamferWidth, 1], [1 - chamferWidth, 1], [1, 1 - chamferHeight], [1, chamferHeight], [1 - chamferWidth, 0]], 
+            pinHeight);
         this.chamferSizeUnits = chamferSizeUnits;
     }
 
     withHeight(pinHeight) {
         return new StandardDriver(pinHeight, this.chamferSizeUnits);
+    }
+
+    serialize() {
+        return "d" + this.pinHeight;
     }
 }
