@@ -27,3 +27,8 @@ button:disabled {
   background: none;
   border-style: dotted;
 }
+
+button:hover {
+  background-color: #e79b18;
+  cursor: pointer;
+}

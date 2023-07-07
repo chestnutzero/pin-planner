@@ -1,4 +1,3 @@
-import {Chamber, Pin} from "./chamber.js";
 import * as Colors from "./colors.js";
 
 const canvas = document.getElementById("cl");

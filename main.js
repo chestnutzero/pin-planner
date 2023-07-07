@@ -1,7 +1,9 @@
-import UrlManager from "./urlmanager.js";
-import {Chamber, Pin} from "./chamber.js";
-import {redrawChambers, findPinUnderCoordinates} from "./renderer.js";
-import PinEditor from "./pineditor.js";
+import UrlManager from "./interface/urlmanager.js";
+import {Chamber} from "./models/chamber.js";
+import {Pin} from "./models/pin.js";
+import PinFactory from "./models/pinfactory.js";
+import {redrawChambers, findPinUnderCoordinates} from "./interface/renderer.js";
+import PinEditor from "./interface/pineditor.js";
 
 const canvas = document.getElementById("cl");
 const ctx = canvas.getContext("2d");
@@ -41,9 +43,10 @@ window.addEventListener("load", setCanvasSize);
 
 document.getElementById("add-chamber").addEventListener("click", () => {
     const chamber = addChamber(new Chamber([]));
-    chamber.addPin(Pin.keyPin(Math.ceil(Math.random() * 7) + 3));
-    chamber.addPin(Pin.standardDriver(Math.ceil(Math.random() * 5) + 5));
+    chamber.addPin(PinFactory.keyPin(Math.ceil(Math.random() * 7) + 3));
+    chamber.addPin(PinFactory.standardDriver(Math.ceil(Math.random() * 5) + 5));
     redraw();
+    updateUrl();
 });
 
 document.getElementById("reset").addEventListener("click", () => {
@@ -51,6 +54,7 @@ document.getElementById("reset").addEventListener("click", () => {
     PinEditor.closePinEditor();
     chambers = [];
     redraw();
+    updateUrl();
 });
 
 function selectPin(pin) {
@@ -96,11 +100,19 @@ canvas.addEventListener("click", event => {
         // delete whatever's being clicked
         if (pin) {
             chamber.removePin(pin.pinIdx);
+            if (selectedPin == pin) {
+                resetPinSelection();
+            }
             redraw();
+            updateUrl();
             return;
         } else if (chamber) {
             removeChamber(chamber.chamberIdx);
+            if (selectedChamber == chamber) {
+                resetPinSelection();
+            }
             redraw();
+            updateUrl();
             return;
         }
     }
@@ -112,6 +124,7 @@ canvas.addEventListener("click", event => {
             }
             resetPinSelection();
             redraw();
+            updateUrl();
             return;
         }
 
@@ -122,11 +135,13 @@ canvas.addEventListener("click", event => {
             selectedPin.moveToChamber(chamber);
             resetPinSelection();
             redraw();
+            updateUrl();
         } else if (selectedChamber) {
             // Swap the entire selected chamber for the new chamber
             Chamber.swap(chamber, selectedChamber);
             resetPinSelection();
             redraw();
+            updateUrl();
         } else {
             selectedChamber = chamber;
             selectedChamber.highlighted = true;
@@ -156,6 +171,7 @@ document.getElementById("edit-pin").addEventListener("click", () => {
         selectedChamber.replacePin(selectedPin.pinIdx, rawPin);
         selectPin(rawPin);
         PinEditor.openPinEditor(selectedPin, onPinEditorExit);
+        updateUrl();
     } else if (PinEditor.isPinEditorOpen()) {
         PinEditor.closePinEditor();
     }
@@ -165,6 +181,7 @@ document.getElementById("increase-pin-height").addEventListener("click", () => {
     if (selectedPin && !PinEditor.isPinEditorOpen()) {
         setSelectedPinHeight(selectedPin.pinHeight + 1);
         redraw();
+        updateUrl();
     }
 });
 
@@ -172,6 +189,7 @@ document.getElementById("decrease-pin-height").addEventListener("click", () => {
     if (selectedPin && !PinEditor.isPinEditorOpen()) {
         setSelectedPinHeight(selectedPin.pinHeight - 1);
         redraw();
+        updateUrl();
     }
 });
 
@@ -196,12 +214,25 @@ document.getElementById("import-pin").addEventListener("click", () => {
     }
     chamber.addPin(newPin);
     redraw();
+    updateUrl();
 });
 
 document.getElementById("toggle-instructions").addEventListener("click", () => {
     let instructions = document.getElementById("instructions");
     let hidden = instructions.toggleAttribute("hidden");
     document.getElementById("toggle-instructions").textContent = hidden ? "Show instructions" : "Hide instructions";
+});
+
+document.getElementById("add-pin").addEventListener("click", () => {
+    let pinTypeName = document.getElementById("pin-type").value;
+    let pin = PinFactory.fromClass(pinTypeName);
+    if (selectedChamber) {
+        selectedChamber.addPin(pin);
+    } else {
+        addChamber(new Chamber()).addPin(pin);
+    }
+    redraw();
+    updateUrl();
 });
 
 function onPinEditorExit() {
@@ -214,6 +245,9 @@ function onPinEditorExit() {
 function redraw() {
     console.log("Redrawing chambers");
     redrawChambers(chambers);
+}
+
+function updateUrl() {
     UrlManager.updateUrlParams(chambers);
 }
 

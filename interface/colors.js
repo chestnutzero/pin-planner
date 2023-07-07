@@ -1,4 +1,3 @@
-
 // Colors
 export const pinFillColor = "#F1C376";
 export const pinHighlightColor = "#e79b18";

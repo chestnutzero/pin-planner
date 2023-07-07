@@ -1,5 +1,5 @@
-import Crusher from "./JSONCrush.min.js";
-import {Chamber} from "./chamber.js";
+import Crusher from "../JSONCrush.min.js";
+import {Chamber} from "../models/chamber.js";
 
 const chambersParam = "c";
 
@@ -34,10 +34,8 @@ function loadFromUrlParams() {
 }
 
 function updateUrlParams(chambers) {
-    console.log(chambers);
     let serializedChambers = encodeURIComponent(Crusher.crush(JSON.stringify(chambers.map(c => c.serialize()))));
     let newUrl = window.location.origin + window.location.pathname + "?c=" + serializedChambers;
-    console.log(newUrl);
     window.history.replaceState({path:newUrl}, "", newUrl);
 }
 

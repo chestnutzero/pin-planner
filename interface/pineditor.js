@@ -1,7 +1,7 @@
-import {Pin} from "./chamber.js";
+import {Pin} from "../models/pin.js";
 import {drawPin, screenToCanvas} from "./renderer.js";
 import UrlManager from "./urlmanager.js";
-import {chambers} from "./planner.js";
+import {chambers} from "../main.js";
 import * as Colors from "./colors.js";
 
 const canvas = document.getElementById("cl");
@@ -113,6 +113,8 @@ function handleClick(event) {
         }
     } else if (mirroredEditor) {
         selectedMirroredPointIdx = currentPin.points.length - 1 - pointIdx;
+    } else {
+        selectedMirroredPointIdx = null;
     }
 
     console.log("Selected point ", pointIdx);

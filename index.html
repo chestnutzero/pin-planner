@@ -19,9 +19,11 @@
             <br>
             Resize pins using the + and - buttons after selecting a pin.
             <br>
-            Once selected, you can edit pins and move their points around or create new points by clicking anywhere on the pin
+            Once selected, you can edit pins and move their points around or create new points by clicking anywhere on
+            the pin
             <br>
-            You can export a selected pin and copy the pin definition from the text box below. Then share it or add it into your other pinning visualizations by importing
+            You can export a selected pin and copy the pin definition from the text box below. Then share it or add it
+            into your other pinning visualizations by importing
             <br>
             Option/alt-click a pin, chamber, or point on pin to delete it.
             <br><br>
@@ -31,10 +33,18 @@
     <button type="button" id="toggle-instructions">Show instructions</button>
     <canvas id="cl"></canvas>
     <div id="options">
+        <label for="pin-type">Pin type</label>
+        <select name="pin-type" id="pin-type">
+            <option value="KeyPin">Key pin</option>
+            <option value="StandardDriver">Standard driver</option>
+            <option value="Spool">Spool</option>
+            <option value="Torpedo">Torpedo</option>
+        </select>
+        <button id="add-pin" class="btn">Add pin</button>
+
         <button type="button" id="add-chamber">Add chamber</button>
         <button type="button" id="reset">Reset</button>
         <button type="button" id="edit-pin" class="pin-specific-btn" disabled>Edit pin</button>
-        <script type="module" src="planner.js"></script>
         <div id="pin-height-control">
             <button type="button" id="decrease-pin-height">-</button>
             Pin height: <span id="pin-height">n/a</span>
@@ -47,11 +57,13 @@
     </div>
     <br>
     <div id="import-export">
-    <button type="button" id="export-pin" class="pin-specific-btn" disabled>Export pin</button>
+        <button type="button" id="export-pin" class="pin-specific-btn" disabled>Export pin</button>
         <button type="button" id="import-pin">Import pin</button>
         <br>
         <textarea name="pin-def" id="pin-def" cols="30" rows="10"></textarea>
     </div>
+
+    <script type="module" src="main.js"></script>
 </body>
 
 </html>
