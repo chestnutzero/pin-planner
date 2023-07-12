@@ -205,7 +205,7 @@ document.getElementById("export-pin").addEventListener("click", () => {
 });
 
 document.getElementById("import-pin").addEventListener("click", () => {
-    const newPin = Pin.deserialize(document.getElementById("pin-def").value);
+    const newPin = PinFactory.deserialize(document.getElementById("pin-def").value);
     let chamber;
     if (selectedChamber) {
         chamber = selectedChamber;
