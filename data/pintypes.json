@@ -1,0 +1,34 @@
+{
+    "KeyPin": {
+        "serializationPrefix": "k",
+        "points": [
+            [0.4, 0, 0],
+            [0, 0.3, 0], 
+            [0, 1, 1]
+        ],
+        "pinHeight": "5",
+        "mirror": true
+    },
+    "StandardDriver": {
+        "serializationPrefix": "d",
+        "points": [
+            [0, 0, 0],
+            [0, 1, 1]
+        ],
+        "pinHeight": "5",
+        "mirror": true
+    },
+    "Spool": {
+        "serializationPrefix": "s",
+        "points": [
+            [0, 0, 0],
+            [0, 0.1, 0],
+            [0.15, 0.1, 0],
+            [0.15, 0.9, 1],
+            [0, 0.9, 1],
+            [0, 1, 1]
+        ],
+        "pinHeight": "5",
+        "mirror": true
+    }
+}

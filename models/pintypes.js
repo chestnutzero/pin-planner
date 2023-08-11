@@ -1,6 +1,26 @@
 import {chamberHeightToWidthRatio} from "../interface/renderer.js";
 import {Pin} from "./pin.js";
 
+export class JSONPremadePin extends Pin {
+    constructor(pinHeight = 5, pinJSON) {
+        let points = pinJSON.points;
+        if (pinJSON.mirror) {
+            points = points.concat(points.slice().reverse().map(point => {
+                return [1 - point[0], point[1], point[2]];
+            }));
+        }
+
+        super(points, pinJSON.pinHeight);
+        super.setHeight(pinHeight);
+        this.serializationPrefix = pinJSON.serializationPrefix;
+    }
+
+    serialize() {
+        console.log("Serializing ", this);
+        return this.serializationPrefix + this.pinHeight;
+    }
+}
+
 class PremadePin extends Pin {
     serialize() {
         let prefix = PIN_TYPE_TO_PREFIX[this.constructor.name];

@@ -86,6 +86,7 @@ function resetPinSelection() {
 }
 
 canvas.addEventListener("click", event => {
+    console.log("click");
     if (PinEditor.isPinEditorOpen()) {
         PinEditor.handleClick(event);
         return;
@@ -158,9 +159,31 @@ canvas.addEventListener("click", event => {
     }
 });
 
+let mouseDown = false;
 canvas.addEventListener("mousemove", event => {
     if (PinEditor.isPinEditorOpen()) {
-        PinEditor.handleMouseMove(event);
+        if (mouseDown) {
+            console.log("drag");
+            PinEditor.handleMouseDrag(event);
+        } else {
+            console.log("move");
+            PinEditor.handleMouseMove(event);
+        }
+    }
+});
+
+canvas.addEventListener("mousedown", event => {
+    console.log("down");
+    mouseDown = true;
+    if (PinEditor.isPinEditorOpen()) {
+        PinEditor.handleMouseDown(event);
+    }
+});
+canvas.addEventListener("mouseup", event => {
+    console.log("up");
+    mouseDown = false;
+    if (PinEditor.isPinEditorOpen()) {
+        PinEditor.handleMouseUp(event);
     }
 });
 
@@ -252,8 +275,7 @@ function updateUrl() {
 }
 
 function setSelectedPinHeight(pinHeight) {
-    selectedPin.points = selectedPin.withHeight(pinHeight).points;
-    selectedPin.pinHeight = pinHeight;
+    selectedPin.setHeight(pinHeight).points;
     selectedPinHeight.textContent = pinHeight;
 }
 

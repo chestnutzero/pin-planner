@@ -1,9 +1,16 @@
+import Point from "./point.js";
+
 export class Pin {
     // Pin is an array of points normalized to 1x1 rect
     // Origin starting at bottom left corner
     // pinHeight is in units, where one unit is 1/20th of the chamber
-    constructor(points, pinHeight, lastRenderMetadata=null, highlighted=false, chamber, pinIdx) {
-        this.points = points;
+    constructor(points, pinHeight, lastRenderMetadata = null, highlighted = false, chamber, pinIdx) {
+        this.points = points.map(p =>
+            p instanceof Array ?
+                new Point(...p)
+                :
+                p
+        );
         this.pinHeight = pinHeight;
         this.lastRenderMetadata = lastRenderMetadata;
         this.highlighted = highlighted;
@@ -18,13 +25,21 @@ export class Pin {
     }
 
     serialize() {
-        return JSON.stringify({ points: this.points, pinHeight: this.pinHeight }, (key, val) => {
-            return (val && val.toFixed) ? Number(val.toFixed(4)) : val;
-        });
+        console.log("Serializing points", this.points);
+        console.log("Plain serialization", JSON.stringify(this.points));
+        return JSON.stringify({ points: this.points.map(p => p.objToSerialize()), pinHeight: this.pinHeight },
+            (key, val) =>
+                (val && val.toFixed) ? Number(val.toFixed(4)) : val
+        );
     }
 
-    withHeight(pinHeight) {
-        return new Pin(this.points, pinHeight);
+    setHeight(pinHeight) {
+        const scaleFactor = pinHeight / this.pinHeight;
+        this.points.forEach(point =>
+            point.scale(scaleFactor)
+        );
+        this.pinHeight = pinHeight;
+        return this;
     }
 
     moveToChamber(chamber) {

@@ -1,14 +1,22 @@
 import {Pin} from "../models/pin.js";
-import {drawPin, screenToCanvas} from "./renderer.js";
+import Point from "../models/point.js";
+import {drawPin, drawPinPoints, screenToCanvas} from "./renderer.js";
 import UrlManager from "./urlmanager.js";
 import {chambers} from "../main.js";
 import * as Colors from "./colors.js";
 
 const canvas = document.getElementById("cl");
 const ctx = canvas.getContext("2d");
+const pointOptions = document.getElementById("point-options");
+const pointX = document.getElementById("point-x");
+const pointY = document.getElementById("point-y");
+const lockDropDown = document.getElementById("point-lock-type");
+const pointLockCustomValue = document.getElementById("point-custom-l");
+const customLInputSection = document.getElementById("custom-l-input");
 
 let open = false;
 let mirroredEditor = true;
+let isDragging = false;
 
 let currentPin;
 let pinRect;
@@ -28,6 +36,8 @@ function openPinEditor(pin, onExit) {
     editBtn.removeAttribute("disabled");
     editBtn.textContent = "Close editor";
     currentPin.highlighted = false;
+
+    pointOptions.style.display = 'block';
 
     ctx.fillStyle = `rgba(40, 40, 40, .4)`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -50,6 +60,10 @@ function closePinEditor() {
     editBtn.setAttribute("disabled", true);
     editBtn.textContent = "Edit pin";
 
+    pointOptions.style.display = 'none';
+
+    UrlManager.updateUrlParams(chambers);
+
     if (exitCallback) {
         exitCallback.call();
     }
@@ -60,15 +74,6 @@ function isPinEditorOpen() {
 }
 
 function handleClick(event) {
-    if (selectedNormalizedPoint) {
-        selectedPointIdx = null;
-        selectedNormalizedPoint = null;
-        UrlManager.updateUrlParams(chambers);
-        precalculateEdgeValues();
-        redraw();
-        return;
-    }
-
     const mouseCoords = screenToCanvas(event.clientX, event.clientY);
     if (!displayRect.contains(mouseCoords[0], mouseCoords[1])) {
         closePinEditor();
@@ -79,16 +84,38 @@ function handleClick(event) {
     const normalizedMouseY = Math.min(Math.max((mouseCoords[1] - pinRect.y) / pinRect.height, 0), 1);
     let { nearest, pointIdx, isExistingPoint } = closestPointToPos(normalizedMouseX, normalizedMouseY);
 
+    if (nearest == null) {
+        console.log("Resetting point selection");
+        selectedNormalizedPoint = null;
+        selectedPointIdx = null;
+        selectedMirroredPointIdx = null;
+        redraw();
+        return;
+    }
+
     if (event.altKey) {
         console.log("Alt key held");
-        if (!isExistingPoint) {
-            console.log("Doing nothing since not existing point");
+        if (selectedPointIdx == null) {
+            console.log("Doing nothing since no point selected");
             return;
         }
 
         // remove selected point
-        console.log("Removing point at %d", pointIdx);
-        currentPin.points.splice(pointIdx, 1);
+        console.log("Removing point at %d", selectedPointIdx);
+        currentPin.points.splice(selectedPointIdx, 1);
+        if (selectedMirroredPointIdx) {
+            let mirroredIdxToDelete = selectedMirroredPointIdx;
+            if (selectedMirroredPointIdx > pointIdx) {
+                mirroredIdxToDelete--;
+            }
+            console.log("Removing point at %d", mirroredIdxToDelete);
+            currentPin.points.splice(mirroredIdxToDelete, 1);
+        }
+
+        selectedNormalizedPoint = null;
+        selectedPointIdx = null;
+        selectedMirroredPointIdx = null;
+
         precalculateEdgeValues();
         redraw();
         return;
@@ -105,7 +132,7 @@ function handleClick(event) {
                 pointIdx++;
             }            
             selectedMirroredPointIdx = currentPin.points.length - pointIdx;
-            const mirroredNearest = [1 - nearest[0], nearest[1]];
+            const mirroredNearest = new Point(1 - nearest.x, nearest.y);
             currentPin.points.splice(selectedMirroredPointIdx, 0, mirroredNearest);
             console.log("Created mirrored point at %d, now points: %d", selectedMirroredPointIdx, currentPin.points.length);
         } else {
@@ -117,10 +144,77 @@ function handleClick(event) {
         selectedMirroredPointIdx = null;
     }
 
-    console.log("Selected point ", pointIdx);
+    console.log("Selected point ", nearest);
     selectedPointIdx = pointIdx;
     selectedNormalizedPoint = nearest;
+
+    pointX.value = selectedNormalizedPoint.x;
+    pointY.value = selectedNormalizedPoint.y;
+    if (selectedNormalizedPoint.lockRelativeToHeight == null) {
+        lockDropDown.value = "none";
+    } else if (selectedNormalizedPoint.lockRelativeToHeight == 0) {
+        lockDropDown.value = "bottom";
+    } else if (selectedNormalizedPoint.lockRelativeToHeight == 0.5) {
+        lockDropDown.value = "middle";
+    } else if (selectedNormalizedPoint.lockRelativeToHeight == 1) {
+        lockDropDown.value = "top";
+    } else {
+        lockDropDown.value = "custom";
+        pointLockCustomValue.value = selectedNormalizedPoint.lockRelativeToHeight;
+    }
+
+    if (lockDropDown.value == "custom") {
+        customLInputSection.style.display = "block";
+    } else {
+        customLInputSection.style.display = "none";
+    }
+
     precalculateEdgeValues();
+    redraw();
+}
+
+function handleMouseDown(event) {
+    if (selectedNormalizedPoint) {
+        const mouseCoords = screenToCanvas(event.clientX, event.clientY);
+        if (!displayRect.contains(mouseCoords[0], mouseCoords[1])) {
+            closePinEditor();
+            return;
+        }
+
+        const normalizedMouseX = Math.min(Math.max((mouseCoords[0] - pinRect.x) / pinRect.width, 0), 1);
+        const normalizedMouseY = Math.min(Math.max((mouseCoords[1] - pinRect.y) / pinRect.height, 0), 1);
+        let { nearest, pointIdx, isExistingPoint } = closestPointToPos(normalizedMouseX, normalizedMouseY);
+
+        if (pointIdx == selectedPointIdx) {
+            console.log("Mouse down near selected point, beginning drag");
+            isDragging = true;
+        } else if (pointIdx == selectedMirroredPointIdx) {
+            console.log("Mouse down near mirrored selected point, switching that to be active selected point then beginning drag");
+            handleClick(event);
+            isDragging = true;
+        }
+    }
+}
+
+function handleMouseDrag(event) {
+    if (!isDragging) {
+        return;
+    }
+
+    const mouseCoords = screenToCanvas(event.clientX, event.clientY);
+    const normalizedMouseX = Math.min(Math.max((mouseCoords[0] - pinRect.x) / pinRect.width, 0), 1);
+    const normalizedMouseY = Math.min(Math.max((mouseCoords[1] - pinRect.y) / pinRect.height, 0), 1);
+
+    if (selectedNormalizedPoint) {
+        currentPin.points[selectedPointIdx].x = normalizedMouseX;
+        currentPin.points[selectedPointIdx].y = normalizedMouseY;
+        currentPin.serOverride = null;
+    }
+    if (selectedMirroredPointIdx != null) {
+        currentPin.points[selectedMirroredPointIdx].x = 1 - normalizedMouseX;
+        currentPin.points[selectedMirroredPointIdx].y = normalizedMouseY;
+    }
+
     redraw();
 }
 
@@ -128,15 +222,16 @@ function handleMouseMove(event) {
     const mouseCoords = screenToCanvas(event.clientX, event.clientY);
     const normalizedMouseX = Math.min(Math.max((mouseCoords[0] - pinRect.x) / pinRect.width, 0), 1);
     const normalizedMouseY = Math.min(Math.max((mouseCoords[1] - pinRect.y) / pinRect.height, 0), 1);
-    if (selectedNormalizedPoint) {
-        currentPin.points[selectedPointIdx] = [normalizedMouseX, normalizedMouseY];
-        currentPin.serOverride = null;
-
-    } else if (currentPin.points.length >= 3) {
+    if (currentPin.points.length >= 3) {
         // Figure out which point to select, or where to add a new point
         redraw();
         const {nearest, isExistingPoint} = closestPointToPos(normalizedMouseX, normalizedMouseY);
-        let cursorRect = new DOMRect(nearest[0] * pinRect.width + pinRect.x - 4, nearest[1] * pinRect.height + pinRect.y - 4, 8, 8);
+
+        if (nearest == null) {
+            return;
+        }
+
+        let cursorRect = new DOMRect(nearest.x * pinRect.width + pinRect.x - 4, nearest.y * pinRect.height + pinRect.y - 4, 8, 8);
         if (isExistingPoint) {
             ctx.strokeStyle = "red";
             ctx.lineWidth = 5;
@@ -147,11 +242,11 @@ function handleMouseMove(event) {
         return;
     }
 
-    if (selectedMirroredPointIdx != null) {
-        currentPin.points[selectedMirroredPointIdx] = [1 - normalizedMouseX, normalizedMouseY];
-    }
-
     redraw();
+}
+
+function handleMouseUp(event) {
+    isDragging = false;
 }
 
 function precalculateEdgeValues() {
@@ -160,8 +255,8 @@ function precalculateEdgeValues() {
     for (let i = 0; i < currentPin.points.length; i++) {
         let point = nextPoint;
         nextPoint = currentPin.points[i];
-        const xDiff = nextPoint[0] - point[0];
-        const yDiff = nextPoint[1] - point[1];
+        const xDiff = nextPoint.x - point.x;
+        const yDiff = nextPoint.y - point.y;
         const xDiffSqr = xDiff * xDiff;
         const yDiffSqr = yDiff * yDiff;
         const denom = xDiffSqr + yDiffSqr;
@@ -194,8 +289,8 @@ function closestPointToPos(x, y) {
             let point = nextPoint
             nextPoint = currentPin.points[i]
 
-            let tx = (x - point[0]) * precalcEdgeDists[i][0];
-            let ty = (y - point[1]) * precalcEdgeDists[i][1];
+            let tx = (x - point.x) * precalcEdgeDists[i][0];
+            let ty = (y - point.y) * precalcEdgeDists[i][1];
             let t = tx + ty;
             let nearestPointIdx;
             let isCurrOnExistingPoint = false;
@@ -204,7 +299,7 @@ function closestPointToPos(x, y) {
                 nearestPointIdx = (i - 1 + n) % n;
                 isCurrOnExistingPoint = true;
             } else if (t < 1 - snapToPointRadius) {
-                q = [((1 - t) * point[0]) + (t * nextPoint[0]), ((1 - t) * point[1]) + (t * nextPoint[1])];
+                q = new Point(((1 - t) * point.x) + (t * nextPoint.x), ((1 - t) * point.y) + (t * nextPoint.y));
                 nearestPointIdx = i;
                 isCurrOnExistingPoint = false;
             } else {
@@ -213,10 +308,12 @@ function closestPointToPos(x, y) {
                 isCurrOnExistingPoint = true;
             }
 
-            let qx = q[0] - x;
-            let qy = q[1] - y;
+            let qx = q.x - x;
+            let qy = q.y - y;
             let qq = (qx * qx) + (qy * qy);
-            if (qq < nearestNormsqr) {
+
+            if (qq < nearestNormsqr && qq < .01) {
+                console.log("Checking point ", i, "qq val is ", qq);
                 nearest = q
                 nearestNormsqr = qq
                 bestT = t;
@@ -227,15 +324,17 @@ function closestPointToPos(x, y) {
 
         }
     } else if (n == 1) {
-        nearest = currentPin.points[0]
-        let dx = nearest[0] - x;
-        let dy = nearest[1] - y;
+        nearest = currentPin.points.x
+        let dx = nearest.x - x;
+        let dy = nearest.y - y;
         nearestNormsqr = dx * dx + dy * dy;
 
     } else {
         nearest = null
         nearestNormsqr = Number.MAX_VALUE;
     }
+
+    console.log("Nearest point is", nearest, existingPointIdx, isExistingPoint);
 
     return { nearest, pointIdx: existingPointIdx, isExistingPoint };
 }
@@ -262,6 +361,25 @@ function redraw() {
     ctx.lineWidth = 1;
     ctx.strokeStyle = `rgba(0, 0, 0, .35)`;
     drawPin(currentPin, pinRect.x, pinRect.y, pinRect.width, pinRect.height);
+    drawPinPoints(currentPin, pinRect.x, pinRect.y, pinRect.width, pinRect.height);
+
+    let i = 0;
+    currentPin.points.forEach(point => {
+        if (point.lastRenderMetadata) {
+            if (i == selectedPointIdx || i == selectedMirroredPointIdx) {
+                ctx.strokeStyle = "black";
+                ctx.lineWidth = 5;
+                ctx.stroke(point.lastRenderMetadata);
+            }
+            if (point.lockRelativeToHeight != null) {
+                ctx.fillStyle = `hsl(${150 + point.lockRelativeToHeight * 200}, 100%, 60%)`
+            } else {
+                ctx.fillStyle = `rgba(0, 0, 0, .35)`;
+            }
+            ctx.fill(point.lastRenderMetadata);
+        }
+        i++;
+    });
 }
 
 function setMirroredEditor(enabled) {
@@ -269,4 +387,50 @@ function setMirroredEditor(enabled) {
     mirroredEditor = enabled;
 }
 
-export default {handleClick, openPinEditor, closePinEditor, isPinEditorOpen, handleMouseMove, setMirroredEditor, redraw};
+pointX.addEventListener('input', evt => {
+    if (selectedNormalizedPoint) {
+        selectedNormalizedPoint.x = evt.target.value;
+        if (selectedMirroredPointIdx) {
+            currentPin.points[selectedMirroredPointIdx].x = 1 - selectedNormalizedPoint.x;
+        }
+        redraw();
+    }
+});
+pointY.addEventListener('input', evt => {
+    if (selectedNormalizedPoint) {
+        selectedNormalizedPoint.y = evt.target.value;
+        if (selectedMirroredPointIdx) {
+            currentPin.points[selectedMirroredPointIdx].y = selectedNormalizedPoint.y;
+        }
+        redraw();
+    }
+});
+lockDropDown.addEventListener('input', evt => {
+    console.log("Value changed to", evt);
+    if (selectedNormalizedPoint) {
+        let selectedOption = evt.target.selectedOptions[0];
+        let newLValue = null;
+        if (selectedOption.attributes.lvalue != null) {
+            newLValue = parseFloat(selectedOption.attributes.lvalue.value);
+            console.log("New l value ", newLValue, "parsed from ", selectedOption.attributes.lvalue)
+        } else if (selectedOption.value == "custom" && selectedNormalizedPoint.lockRelativeToHeight != null) {
+            pointLockCustomValue.value = selectedNormalizedPoint.lockRelativeToHeight;
+        }
+
+        if (selectedOption.value == "custom") {
+            customLInputSection.style.display = "block";
+        } else {
+            customLInputSection.style.display = "none";
+        }
+
+        if (newLValue != null) {
+            selectedNormalizedPoint.lockRelativeToHeight = newLValue;
+            if (selectedMirroredPointIdx) {
+                currentPin.points[selectedMirroredPointIdx].lockRelativeToHeight = newLValue;
+            }
+        }
+        redraw();
+    }
+});
+
+export default {handleClick, openPinEditor, closePinEditor, isPinEditorOpen, handleMouseMove, setMirroredEditor, redraw, handleMouseDrag, handleMouseDown, handleMouseUp};

@@ -32,6 +32,24 @@
     </div>
     <button type="button" id="toggle-instructions">Show instructions</button>
     <canvas id="cl"></canvas>
+    <div id="point-options">
+        <label for="x">x:</label>
+        <input type="text" name="x" id="point-x">
+        <label for="y">y:</label>
+        <input type="text" name="y" id="point-y">
+        <label for="point-lock-type">lock to:</label>
+        <select name="point-lock-type" id="point-lock-type">
+            <option value="top", lvalue="1.0">Top</option>
+            <option value="middle", lvalue="0.5">Middle</option>
+            <option value="bottom", lvalue="0.0">Bottom</option>
+            <option value="none">None</option>
+            <option value="custom">Custom</option>
+        </select>
+        <div id="custom-l-input">
+            <label for="custom-l">lock to height: </label>
+            <input type="text" name="custom-l" id="point-custom-l">
+        </div>
+    </div>
     <div id="options">
         <label for="pin-type">Pin type</label>
         <select name="pin-type" id="pin-type">
