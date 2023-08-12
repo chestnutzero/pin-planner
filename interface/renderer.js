@@ -61,12 +61,22 @@ function drawPin(pin, x, y, w, h) {
     ctx.fill();
 }
 
+function drawPinPoints(pin, x, y, w, h) {
+    pin.points.forEach(point => {
+        let px = point.x * w + x;
+        let py = point.y * h + y;
+        let path = new Path2D();
+        path.rect(px - 4, py - 4, 8, 8);
+        point.lastRenderMetadata = path;
+    });
+}
+
 function drawPinPath(pin, x, y, w, h) {
     ctx.moveTo(x, y);
     ctx.beginPath();
     pin.points.forEach(point => {
-        let px = point[0] * w + x;
-        let py = point[1] * h + y;
+        let px = point.x * w + x;
+        let py = point.y * h + y;
         ctx.lineTo(px, py);
     });
     ctx.closePath();
@@ -123,4 +133,4 @@ function screenToCanvas(x, y) {
     return [x - canvasBounds.left, canvasBounds.height - (y - canvasBounds.top)];
 }
 
-export {redrawChambers, drawPin, drawChamber, findPinUnderCoordinates, screenToCanvas};
+export {redrawChambers, drawPin, drawPinPoints, drawChamber, findPinUnderCoordinates, screenToCanvas};

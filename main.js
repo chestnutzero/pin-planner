@@ -4,10 +4,13 @@ import {Pin} from "./models/pin.js";
 import PinFactory from "./models/pinfactory.js";
 import {redrawChambers, findPinUnderCoordinates} from "./interface/renderer.js";
 import PinEditor from "./interface/pineditor.js";
+import PinTypes from "./data/pintypes.json"  assert { type: "json" };
 
 const canvas = document.getElementById("cl");
 const ctx = canvas.getContext("2d");
 const selectedPinHeight = document.getElementById("pin-height");
+const addPinTypeSelect = document.getElementById("pin-type");
+
 let chambers;
 let selectedChamber, selectedPin;
 
@@ -86,6 +89,7 @@ function resetPinSelection() {
 }
 
 canvas.addEventListener("click", event => {
+    console.log("click");
     if (PinEditor.isPinEditorOpen()) {
         PinEditor.handleClick(event);
         return;
@@ -158,9 +162,31 @@ canvas.addEventListener("click", event => {
     }
 });
 
+let mouseDown = false;
 canvas.addEventListener("mousemove", event => {
     if (PinEditor.isPinEditorOpen()) {
-        PinEditor.handleMouseMove(event);
+        if (mouseDown) {
+            console.log("drag");
+            PinEditor.handleMouseDrag(event);
+        } else {
+            console.log("move");
+            PinEditor.handleMouseMove(event);
+        }
+    }
+});
+
+canvas.addEventListener("mousedown", event => {
+    console.log("down");
+    mouseDown = true;
+    if (PinEditor.isPinEditorOpen()) {
+        PinEditor.handleMouseDown(event);
+    }
+});
+canvas.addEventListener("mouseup", event => {
+    console.log("up");
+    mouseDown = false;
+    if (PinEditor.isPinEditorOpen()) {
+        PinEditor.handleMouseUp(event);
     }
 });
 
@@ -252,12 +278,20 @@ function updateUrl() {
 }
 
 function setSelectedPinHeight(pinHeight) {
-    selectedPin.points = selectedPin.withHeight(pinHeight).points;
-    selectedPin.pinHeight = pinHeight;
+    selectedPin.setHeight(pinHeight).points;
     selectedPinHeight.textContent = pinHeight;
 }
 
 chambers = UrlManager.loadFromUrlParams();
 redraw();
+
+// Populate pintype options from our json data
+Object.entries(PinTypes)
+    .forEach(entry => {
+        let opt = document.createElement("option");
+        opt.text = entry[1].displayName;
+        opt.value = entry[0];
+        addPinTypeSelect.add(opt);
+    });
 
 export {chambers};

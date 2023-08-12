@@ -32,3 +32,15 @@ button:hover {
   background-color: #e79b18;
   cursor: pointer;
 }
+
+div#point-options {
+  border-width: 5px;
+  border-style: solid;
+  padding-bottom: 10px;
+  padding-top: 10px;
+  display: none;
+}
+
+div#point-options > input {
+  max-width: 100px;
+}
