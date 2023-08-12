@@ -32,24 +32,27 @@
     </div>
     <button type="button" id="toggle-instructions">Show instructions</button>
     <canvas id="cl"></canvas>
+
     <div id="point-options">
         <label for="x">x:</label>
-        <input type="text" name="x" id="point-x">
+        <input type="text" name="x" id="point-x" class="point-specific-input">
         <label for="y">y:</label>
-        <input type="text" name="y" id="point-y">
+        <input type="text" name="y" id="point-y" class="point-specific-input">
         <label for="point-lock-type">lock to:</label>
-        <select name="point-lock-type" id="point-lock-type">
+        <select name="point-lock-type" id="point-lock-type" class="point-specific-input">
             <option value="top", lvalue="1.0">Top</option>
             <option value="middle", lvalue="0.5">Middle</option>
             <option value="bottom", lvalue="0.0">Bottom</option>
             <option value="none">None</option>
             <option value="custom">Custom</option>
         </select>
-        <div id="custom-l-input">
+        <div id="custom-l-input" style="display: none;">
             <label for="custom-l">lock to height: </label>
             <input type="text" name="custom-l" id="point-custom-l">
         </div>
+        <button type="button" id="delete-point" class="point-specific-input">Delete</button>
     </div>
+
     <div id="options">
         <label for="pin-type">Pin type</label>
         <select name="pin-type" id="pin-type"></select>
@@ -58,6 +61,7 @@
         <button type="button" id="add-chamber">Add chamber</button>
         <button type="button" id="reset">Reset</button>
         <button type="button" id="edit-pin" class="pin-specific-btn" disabled>Edit pin</button>
+        <button type="button" id="delete-pin" class="pin-specific-btn" disabled>Delete pin</button>
         <div id="pin-height-control">
             <button type="button" id="decrease-pin-height">-</button>
             Pin height: <span id="pin-height">n/a</span>

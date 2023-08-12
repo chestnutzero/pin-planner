@@ -103,13 +103,7 @@ canvas.addEventListener("click", event => {
     if (event.altKey) {
         // delete whatever's being clicked
         if (pin) {
-            chamber.removePin(pin.pinIdx);
-            if (selectedPin == pin) {
-                resetPinSelection();
-            }
-            redraw();
-            updateUrl();
-            return;
+            deletePin(pin);
         } else if (chamber) {
             removeChamber(chamber.chamberIdx);
             if (selectedChamber == chamber) {
@@ -158,9 +152,21 @@ canvas.addEventListener("click", event => {
 
     if (selectedPin) {
         selectedPinHeight.textContent = selectedPin.pinHeight;
-        document.getElementById("edit-pin").removeAttribute("disabled");
     }
 });
+
+function deletePin(pin) {
+    if (pin) {
+        console.log("Deleting", pin);
+        pin.chamber.removePin(pin.pinIdx);
+        if (selectedPin == pin) {
+            resetPinSelection();
+        }
+        redraw();
+        updateUrl();
+        return;
+    }
+}
 
 let mouseDown = false;
 canvas.addEventListener("mousemove", event => {
@@ -202,6 +208,8 @@ document.getElementById("edit-pin").addEventListener("click", () => {
         PinEditor.closePinEditor();
     }
 });
+
+document.getElementById("delete-pin").addEventListener("click", () => deletePin(selectedPin));
 
 document.getElementById("increase-pin-height").addEventListener("click", () => {
     if (selectedPin && !PinEditor.isPinEditorOpen()) {
