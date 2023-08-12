@@ -1,5 +1,5 @@
-import { JSONPremadePin } from "./pintypes.js";
-import PinTypes from "../data/pintypes.json"  assert { type: "json" };
+import { JSONPremadePin } from "./premadepin.js";
+import PinTypes from "../data/pintypes.js";
 import { Pin } from "./pin.js";
 import Point from "./point.js";
 

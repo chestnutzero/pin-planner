@@ -1,4 +1,4 @@
-{
+export default {
     "KeyPin": {
         "serializationPrefix": "k",
         "points": [

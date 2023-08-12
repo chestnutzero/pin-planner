@@ -4,7 +4,7 @@ import {Pin} from "./models/pin.js";
 import PinFactory from "./models/pinfactory.js";
 import {redrawChambers, findPinUnderCoordinates} from "./interface/renderer.js";
 import PinEditor from "./interface/pineditor.js";
-import PinTypes from "./data/pintypes.json"  assert { type: "json" };
+import PinTypes from "./data/pintypes.js";
 
 const canvas = document.getElementById("cl");
 const ctx = canvas.getContext("2d");
@@ -104,6 +104,7 @@ canvas.addEventListener("click", event => {
         // delete whatever's being clicked
         if (pin) {
             deletePin(pin);
+            return;
         } else if (chamber) {
             removeChamber(chamber.chamberIdx);
             if (selectedChamber == chamber) {
@@ -159,9 +160,8 @@ function deletePin(pin) {
     if (pin) {
         console.log("Deleting", pin);
         pin.chamber.removePin(pin.pinIdx);
-        if (selectedPin == pin) {
-            resetPinSelection();
-        }
+
+        resetPinSelection();
         redraw();
         updateUrl();
         return;
