@@ -13,6 +13,7 @@ const pointY = document.getElementById("point-y");
 const lockDropDown = document.getElementById("point-lock-type");
 const pointLockCustomValue = document.getElementById("point-custom-l");
 const customLInputSection = document.getElementById("custom-l-input");
+const deletePointButton = document.getElementById("delete-point");
 
 let open = false;
 let mirroredEditor = true;
@@ -41,6 +42,7 @@ function openPinEditor(pin, onExit) {
 
     ctx.fillStyle = `rgba(40, 40, 40, .4)`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    resetPointSelection();
     redraw();
     precalculateEdgeValues();
 }
@@ -73,6 +75,26 @@ function isPinEditorOpen() {
     return open;
 }
 
+function selectPoint(point, pointIdx, mirroredPointIdx = null) {
+    console.log("Selected point ", point);
+    selectedNormalizedPoint = point;
+    selectedPointIdx = pointIdx;
+    selectedMirroredPointIdx = mirroredPointIdx;
+    for (let element of document.getElementsByClassName("point-specific-input")) {
+        element.removeAttribute("disabled");
+    }
+}
+
+function resetPointSelection() {
+    console.log("Resetting point selection");
+    selectedNormalizedPoint = null;
+    selectedPointIdx = null;
+    selectedMirroredPointIdx = null;
+    for (let element of document.getElementsByClassName("point-specific-input")) {
+        element.setAttribute("disabled", true);
+    }
+}
+
 function handleClick(event) {
     const mouseCoords = screenToCanvas(event.clientX, event.clientY);
     if (!displayRect.contains(mouseCoords[0], mouseCoords[1])) {
@@ -85,39 +107,14 @@ function handleClick(event) {
     let { nearest, pointIdx, isExistingPoint } = closestPointToPos(normalizedMouseX, normalizedMouseY);
 
     if (nearest == null) {
-        console.log("Resetting point selection");
-        selectedNormalizedPoint = null;
-        selectedPointIdx = null;
-        selectedMirroredPointIdx = null;
+        resetPointSelection();
         redraw();
         return;
     }
 
     if (event.altKey) {
         console.log("Alt key held");
-        if (selectedPointIdx == null) {
-            console.log("Doing nothing since no point selected");
-            return;
-        }
-
-        // remove selected point
-        console.log("Removing point at %d", selectedPointIdx);
-        currentPin.points.splice(selectedPointIdx, 1);
-        if (selectedMirroredPointIdx) {
-            let mirroredIdxToDelete = selectedMirroredPointIdx;
-            if (selectedMirroredPointIdx > pointIdx) {
-                mirroredIdxToDelete--;
-            }
-            console.log("Removing point at %d", mirroredIdxToDelete);
-            currentPin.points.splice(mirroredIdxToDelete, 1);
-        }
-
-        selectedNormalizedPoint = null;
-        selectedPointIdx = null;
-        selectedMirroredPointIdx = null;
-
-        precalculateEdgeValues();
-        redraw();
+        deleteSelectedPoint();
         return;
     }
 
@@ -144,9 +141,7 @@ function handleClick(event) {
         selectedMirroredPointIdx = null;
     }
 
-    console.log("Selected point ", nearest);
-    selectedPointIdx = pointIdx;
-    selectedNormalizedPoint = nearest;
+    selectPoint(nearest, pointIdx, selectedMirroredPointIdx);
 
     pointX.value = selectedNormalizedPoint.x;
     pointY.value = selectedNormalizedPoint.y * currentPin.pinHeight;
@@ -169,6 +164,29 @@ function handleClick(event) {
         customLInputSection.style.display = "none";
     }
 
+    precalculateEdgeValues();
+    redraw();
+}
+
+function deleteSelectedPoint() {
+    if (selectedPointIdx == null) {
+        console.log("Doing nothing since no point selected");
+        return;
+    }
+
+    // remove selected point
+    console.log("Removing point at %d", selectedPointIdx);
+    currentPin.points.splice(selectedPointIdx, 1);
+    if (selectedMirroredPointIdx) {
+        let mirroredIdxToDelete = selectedMirroredPointIdx;
+        if (selectedMirroredPointIdx > selectedPointIdx) {
+            mirroredIdxToDelete--;
+        }
+        console.log("Removing point at %d", mirroredIdxToDelete);
+        currentPin.points.splice(mirroredIdxToDelete, 1);
+    }
+
+    resetPointSelection();
     precalculateEdgeValues();
     redraw();
 }
@@ -432,5 +450,7 @@ lockDropDown.addEventListener('input', evt => {
         redraw();
     }
 });
+
+deletePointButton.addEventListener("click", deleteSelectedPoint);
 
 export default {handleClick, openPinEditor, closePinEditor, isPinEditorOpen, handleMouseMove, setMirroredEditor, redraw, handleMouseDrag, handleMouseDown, handleMouseUp};
