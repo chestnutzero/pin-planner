@@ -40,7 +40,7 @@ function deserialize(strPoints) {
     let pinType = NAMED_PIN_PREFIXES.get(prefix);
     if (pinType != null) {
         console.log("Creating pin of type", pinType);
-        let pinHeight = Number.parseInt(strPoints.substring(1));
+        let pinHeight = Number.parseInt(strPoints.substring(prefix.length));
         return new JSONPremadePin(pinHeight, PinTypes[pinType]);
     }
     console.log("Falling back to key pin 5 for ", strPoints);

@@ -4,10 +4,13 @@ import {Pin} from "./models/pin.js";
 import PinFactory from "./models/pinfactory.js";
 import {redrawChambers, findPinUnderCoordinates} from "./interface/renderer.js";
 import PinEditor from "./interface/pineditor.js";
+import PinTypes from "./data/pintypes.json"  assert { type: "json" };
 
 const canvas = document.getElementById("cl");
 const ctx = canvas.getContext("2d");
 const selectedPinHeight = document.getElementById("pin-height");
+const addPinTypeSelect = document.getElementById("pin-type");
+
 let chambers;
 let selectedChamber, selectedPin;
 
@@ -281,5 +284,14 @@ function setSelectedPinHeight(pinHeight) {
 
 chambers = UrlManager.loadFromUrlParams();
 redraw();
+
+// Populate pintype options from our json data
+Object.entries(PinTypes)
+    .forEach(entry => {
+        let opt = document.createElement("option");
+        opt.text = entry[1].displayName;
+        opt.value = entry[0];
+        addPinTypeSelect.add(opt);
+    });
 
 export {chambers};

@@ -149,7 +149,7 @@ function handleClick(event) {
     selectedNormalizedPoint = nearest;
 
     pointX.value = selectedNormalizedPoint.x;
-    pointY.value = selectedNormalizedPoint.y;
+    pointY.value = selectedNormalizedPoint.y * currentPin.pinHeight;
     if (selectedNormalizedPoint.lockRelativeToHeight == null) {
         lockDropDown.value = "none";
     } else if (selectedNormalizedPoint.lockRelativeToHeight == 0) {
@@ -389,7 +389,7 @@ function setMirroredEditor(enabled) {
 
 pointX.addEventListener('input', evt => {
     if (selectedNormalizedPoint) {
-        selectedNormalizedPoint.x = evt.target.value;
+        selectedNormalizedPoint.x = parseFloat(evt.target.value);
         if (selectedMirroredPointIdx) {
             currentPin.points[selectedMirroredPointIdx].x = 1 - selectedNormalizedPoint.x;
         }
@@ -398,7 +398,7 @@ pointX.addEventListener('input', evt => {
 });
 pointY.addEventListener('input', evt => {
     if (selectedNormalizedPoint) {
-        selectedNormalizedPoint.y = evt.target.value;
+        selectedNormalizedPoint.y = parseFloat(evt.target.value) / currentPin.pinHeight;
         if (selectedMirroredPointIdx) {
             currentPin.points[selectedMirroredPointIdx].y = selectedNormalizedPoint.y;
         }
