@@ -1,4 +1,4 @@
-import Crusher from "../JSONCrush.min.js";
+import Crusher from "../lib/JSONCrush.min.js";
 import {Chamber} from "../models/chamber.js";
 
 const chambersParam = "c";

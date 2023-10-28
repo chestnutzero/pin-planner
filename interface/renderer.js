@@ -3,7 +3,7 @@ import * as Colors from "./colors.js";
 const canvas = document.getElementById("cl");
 const ctx = canvas.getContext("2d");
 export const chamberHeightToWidthRatio = 4;
-const chamberPaddingRatio = .1;
+const chamberPaddingRatio = .15
 // % of chamber height that one unit of pin height takes up
 // 20 units per chamber
 const pinUnitHeightRatio = .05;
@@ -20,23 +20,57 @@ Object.defineProperty(DOMRect.prototype, 'contains', {
     }
 });
 
+export function getChamberWidth(innerWidth) {
+    const outerWidth = innerWidth / (1 - chamberPaddingRatio);
+    return {innerWidth, outerWidth};
+}
+
 function drawChamber(chamber, chamberNum, chamberWidth, chamberHeight) {
     let paddingSize = chamberWidth * chamberPaddingRatio;
     let x = chamberNum * chamberWidth + paddingSize;
     let y = 0;
-    let w = chamberWidth - (paddingSize * 2);
     let h = chamberHeight;
+    let chamberStartX = x - paddingSize;
+    let coreHeight = chamberHeight / 2;
+
+    const innerWidth = chamberWidth - (paddingSize * 2);
+    const w = innerWidth;
+
+    // chamber.getCorePoints(w, chamberWidth, chamberHeight/2);
+    // chamber.getBiblePoints();
+
     if (chamber.highlighted) {
         ctx.fillStyle = Colors.chamberHighlightColor;
     } else {
         ctx.fillStyle = Colors.chamberFillColor;
     }
-    ctx.fillRect(x, y, w, h);
+
+    ctx.beginPath();
+    chamber.getCorePoints(w, chamberWidth, chamberHeight / 2)
+        .map(p => {
+            p.x = p.x + chamberStartX;
+            p.y = p.y + y;
+            return p;
+        })
+        .forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    chamber.getBiblePoints(w, chamberWidth, chamberHeight / 2)
+        .map(p => {
+            p.x = p.x + chamberStartX;
+            p.y = p.y + y + coreHeight + 2;
+            return p;
+        })
+        .forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.closePath();
+    ctx.fill();
+
+    // ctx.fillRect(x, y, w, h);
 
     let currentHeight = 0;
     chamber.pinStack.forEach(pin => {
-        // ctx.fillStyle = `hsl(${150 + pin.pinHeight * 10 + (idx++ * 7)}, 50%, 50%)`
-        // ctx.fillStyle = "#8a857c";
         let pinHeight = pin.pinHeight * chamberHeight * pinUnitHeightRatio;
         drawPinPath(pin, x + pinPaddingX, currentHeight + pinPaddingY, w - pinPaddingX * 2, pinHeight - pinPaddingY);
         if (pin.highlighted) {
@@ -121,6 +155,17 @@ function redrawChambers(chambers) {
     let chamberWidth = canvas.width / chambers.length;
     const chamberHeight = Math.min(chamberWidth * chamberHeightToWidthRatio, canvas.height);
     chamberWidth = chamberHeight / chamberHeightToWidthRatio;
+
+    let coreHeight = chamberHeight / 2;
+    ctx.strokeStyle = "red";
+    ctx.fillStyle = "none";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    ctx.moveTo(0, coreHeight + 1);
+    // Draw shear line
+    ctx.lineTo(canvas.width, coreHeight + 1);
+    ctx.stroke();
 
     let chamberNum = 0;
     chambers.forEach(chamber => {

@@ -25,10 +25,11 @@ button {
 
 button:disabled {
   background: none;
+  background-color: #0000;
   border-style: dotted;
 }
 
-button:hover {
+button:hover:not(:disabled) {
   background-color: #e79b18;
   cursor: pointer;
 }
@@ -43,4 +44,18 @@ div#point-options {
 
 div#point-options > input {
   max-width: 100px;
+}
+
+button#simulate-chamber:not(:disabled) {
+  background-color:rgb(130, 226, 130);
+}
+
+button#delete-chamber:not(:disabled) {
+  background-color:rgb(249, 122, 122);
+}
+button#delete-pin:not(:disabled) {
+  background-color:rgb(249, 122, 122);
+}
+button#reset:not(:disabled) {
+  background-color:rgb(249, 122, 122);
 }

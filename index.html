@@ -11,26 +11,6 @@
 </head>
 
 <body>
-    <div id="instructions" hidden>
-        <p>Instructions: <br>
-            To move pins, click a pin to select it, then click where you want it to go
-            <br>
-            Add chambers with the button - they'll be populated with a randomly sized key and driver pin.
-            <br>
-            Resize pins using the + and - buttons after selecting a pin.
-            <br>
-            Once selected, you can edit pins and move their points around or create new points by clicking anywhere on
-            the pin
-            <br>
-            You can export a selected pin and copy the pin definition from the text box below. Then share it or add it
-            into your other pinning visualizations by importing
-            <br>
-            Option/alt-click a pin, chamber, or point on pin to delete it.
-            <br><br>
-            All changes are saved automatically in the URL, which is long-lived (no promises though) and shareable.
-        </p>
-    </div>
-    <button type="button" id="toggle-instructions">Show instructions</button>
     <canvas id="cl"></canvas>
 
     <div id="point-options">
@@ -40,9 +20,9 @@
         <input type="text" name="y" id="point-y" class="point-specific-input">
         <label for="point-lock-type">lock to:</label>
         <select name="point-lock-type" id="point-lock-type" class="point-specific-input">
-            <option value="top", lvalue="1.0">Top</option>
-            <option value="middle", lvalue="0.5">Middle</option>
-            <option value="bottom", lvalue="0.0">Bottom</option>
+            <option value="top" , lvalue="1.0">Top</option>
+            <option value="middle" , lvalue="0.5">Middle</option>
+            <option value="bottom" , lvalue="0.0">Bottom</option>
             <option value="none">None</option>
             <option value="custom">Custom</option>
         </select>
@@ -53,34 +33,54 @@
         <button type="button" id="delete-point" class="point-specific-input">Delete</button>
     </div>
 
-    <div id="options">
-        <label for="pin-type">Pin type</label>
-        <select name="pin-type" id="pin-type"></select>
-        <button id="add-pin" class="btn">Add pin</button>
+    <div id="planner-options">
+        <div id="options">
+            <label for="pin-type">Pin type</label>
+            <select name="pin-type" id="pin-type"></select>
+            <label for="milling-type">Chamber milling type</label>
+            <select name="milling-type" id="milling-type"></select>
+            <button id="add-pin" class="btn">Add pin</button>
+            <button type="button" id="add-chamber">Add chamber</button>
+            <button type="button" id="reset">Reset</button>
 
-        <button type="button" id="add-chamber">Add chamber</button>
-        <button type="button" id="reset">Reset</button>
-        <button type="button" id="edit-pin" class="pin-specific-btn" disabled>Edit pin</button>
-        <button type="button" id="delete-pin" class="pin-specific-btn" disabled>Delete pin</button>
-        <div id="pin-height-control">
-            <button type="button" id="decrease-pin-height">-</button>
-            Pin height: <span id="pin-height">n/a</span>
-            <button type="button" id="increase-pin-height">+</button>
+            <div id="chamber-selected-options">
+                <button type="button" id="simulate-chamber" class="chamber-specific-btn" disabled>Simulate
+                    chamber!</button>
+                <button type="button" id="delete-chamber" class="chamber-specific-btn" disabled>Delete chamber</button>
+            </div>
+
+            <div id="pin-selected-options">
+                <button type="button" id="edit-pin" class="pin-specific-btn" disabled>Edit pin</button>
+                <button type="button" id="delete-pin" class="pin-specific-btn" disabled>Delete pin</button>
+                <div id="pin-height-control">
+                    <button type="button" id="decrease-pin-height" class="pin-specific-btn" disabled>-</button>
+                    Pin height: <span id="pin-height">n/a</span>
+                    <button type="button" id="increase-pin-height" class="pin-specific-btn" disabled>+</button>
+                </div>
+            </div>
+
+            <div id="mirroring-control">
+                <label for="mirrored-editor">Symmetrical pin editing</label>
+                <input type="checkbox" name="mirrored-editor" id="mirrored-editor" checked>
+            </div>
         </div>
-        <div id="mirroring-control">
-            <label for="mirrored-editor">Symmetrical pin editing</label>
-            <input type="checkbox" name="mirrored-editor" id="mirrored-editor" checked>
-        </div>
-    </div>
-    <br>
-    <div id="import-export">
-        <button type="button" id="export-pin" class="pin-specific-btn" disabled>Export pin</button>
-        <button type="button" id="import-pin">Import pin</button>
         <br>
-        <textarea name="pin-def" id="pin-def" cols="30" rows="10"></textarea>
+        <div id="import-export">
+            <button type="button" id="export-pin" class="pin-specific-btn" disabled>Export pin</button>
+            <button type="button" id="import-pin">Import pin</button>
+            <br>
+            <textarea name="pin-def" id="pin-def" cols="30" rows="10"></textarea>
+        </div>
+    </div>
+    <div id="simulator-controls" hidden>
+        <button type="button" id="close-simulator">Exit simulation</button>
+        <label for="mirrored-editor">Lock dragging to vertical only</label>
+        <input type="checkbox" name="lock-drag-controls-vertically" id="lock-drag-controls-vertically" checked>
     </div>
 
-    <script type="module" src="main.js"></script>
+    <script type="module" src="main.js" type="text/javascript"></script>
+    <script src="lib/matter.min.js" type="text/javascript"></script>
+    <script src="lib/decomp.min.js" type="text/javascript"></script>
 </body>
 
 </html>
