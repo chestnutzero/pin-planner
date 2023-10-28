@@ -290,6 +290,12 @@ document.getElementById("mirrored-editor").addEventListener("change", event => {
     PinEditor.setMirroredEditor(event.target.checked);
 });
 
+document.getElementById("close-pin-editor").addEventListener("click", event => {
+    if (PinEditor.isPinEditorOpen()) {
+        PinEditor.closePinEditor();
+    }
+});
+
 document.getElementById("export-pin").addEventListener("click", () => {
     if (selectedPin) {
         document.getElementById("pin-def").value = selectedPin.serialize();

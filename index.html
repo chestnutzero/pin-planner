@@ -31,6 +31,11 @@
             <input type="text" name="custom-l" id="point-custom-l">
         </div>
         <button type="button" id="delete-point" class="point-specific-input">Delete</button>
+        <div id="mirroring-control">
+            <label for="mirrored-editor">Symmetrical pin editing</label>
+            <input type="checkbox" name="mirrored-editor" id="mirrored-editor" checked>
+        </div>
+        <button id="close-pin-editor" class="btn">Close</button>
     </div>
 
     <div id="planner-options">
@@ -57,11 +62,6 @@
                     Pin height: <span id="pin-height">n/a</span>
                     <button type="button" id="increase-pin-height" class="pin-specific-btn" disabled>+</button>
                 </div>
-            </div>
-
-            <div id="mirroring-control">
-                <label for="mirrored-editor">Symmetrical pin editing</label>
-                <input type="checkbox" name="mirrored-editor" id="mirrored-editor" checked>
             </div>
         </div>
         <br>
