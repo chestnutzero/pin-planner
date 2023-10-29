@@ -73,8 +73,8 @@ let pins;
 let rotationForceConstraint, pickForceConstraint, mouseConstraint;
 let animationStarted = false;
 
-let engine = Engine.create();
-let world = engine.world;
+let engine;
+let world;
 
 function getPinBody(pin) {
     const lastRenderMetadata = pin.lastRenderMetadata;
