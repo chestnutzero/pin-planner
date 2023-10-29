@@ -221,7 +221,7 @@ function openSimulator(chamber, onCloseCallback = () => {}) {
             yForce = yForce - (bodySpeedY * .01);
 
             let xForce = 0;
-            if (!lockDragControls.checked) {
+            if (!lockDragControls.checked || clickedBody.id === core.id) {
                 xForce = -.001 * ((mouseConstraint.body.position.x + mouseConstraint.constraint.pointB.x) - mouseConstraint.constraint.pointA.x);
                 const bodySpeedX = mouseConstraint.body.velocity.x;
                 xForce = xForce - (bodySpeedX * .01);
