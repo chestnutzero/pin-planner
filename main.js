@@ -21,6 +21,9 @@ let selectedChamber, selectedPin;
 let mouseDownX, mouseDownY;
 let dragging = false;
 
+let savedPinType;
+let savedMillingType;
+
 export function setChambers(newChambers) {
     chambers = newChambers;
     redraw();
@@ -47,14 +50,24 @@ export function deleteChamber(chamberIdx) {
     updateUrl();
 }
 
+export function setChamberMillingType(chamber, millingType) {
+    chamber.millingType = millingType;
+    redraw();
+    updateUrl();
+}
+
 export function getSelectedChamber() {
     return selectedChamber;
+}
+
+export function getSelectedPin() {
+    return selectedPin;
 }
 
 function setCanvasSize() {
     canvas.width = window.innerWidth * .9;
     canvas.height = Math.max(Math.min(canvas.width * .5, window.innerWidth * .8), 400);
-    // Having pin points use bottom left origin and canvas us top left origin is annoying
+    // Having pin points use bottom left origin and canvas use top left origin is annoying
     // Just use bottom left origin for everything
     ctx.transform(1, 0, 0, -1, 0, canvas.height)
     console.debug("resizing");
@@ -80,6 +93,13 @@ function selectPin(pin) {
     pin.highlighted = true;
     selectChamber(pin.chamber);
     selectedPin = pin;
+    savedPinType = addPinTypeSelect.value;
+    console.log("Saving pin type", savedPinType);
+    if (pin.pinTypeOptionValue) {
+        addPinTypeSelect.value = pin.pinTypeOptionValue;
+    } else {
+        addPinTypeSelect.value = null;
+    }
 
     let elements = document.getElementsByClassName("pin-specific-btn");
     for (let i=0; i<elements.length; i++) {
@@ -88,8 +108,11 @@ function selectPin(pin) {
 }
 
 function selectChamber(chamber, highlighted = false) {
+    savedMillingType = millingTypeSelect.value;
+    console.log("Selecting chamber", chamber);
     selectedChamber = chamber;
     selectedChamber.highlighted = highlighted;
+    millingTypeSelect.value = chamber.millingType;
 
     let elements = document.getElementsByClassName("chamber-specific-btn");
     for (let i=0; i<elements.length; i++) {
@@ -98,10 +121,14 @@ function selectChamber(chamber, highlighted = false) {
 }
 
 function resetChamberSelection() {
-    if (selectedChamber) {
-        selectedChamber.highlighted = false;
+    console.log("Resetting chamber selection");
+    if (!selectedChamber) {
+        return;
     }
+
+    selectedChamber.highlighted = false;
     selectedChamber = null;
+    millingTypeSelect.value = savedMillingType;
 
     let elements = document.getElementsByClassName("chamber-specific-btn");
     for (let i=0; i<elements.length; i++) {
@@ -111,6 +138,12 @@ function resetChamberSelection() {
 
 function resetPinSelection() {
     resetChamberSelection();
+
+    if (!selectedPin) {
+        return;
+    }
+
+    addPinTypeSelect.value = savedPinType;
     if (selectedPin) {
         selectedPin.highlighted = false;
     } 
@@ -341,6 +374,18 @@ document.getElementById("add-pin").addEventListener("click", () => {
     updateUrl();
 });
 
+export function setPinType(pin, pinType) {
+    console.log("Replacing pin", pin, "with type", pinType);
+    const newPin = PinFactory.fromClass(pinType);
+    newPin.setHeight(pin.pinHeight);
+    pin.chamber.replacePin(pin.pinIdx, newPin);
+    if (pin == selectedPin) {
+        selectPin(newPin);
+    }
+    redraw();
+    updateUrl();
+}
+
 function onPinEditorExit() {
     plannerOpts.removeAttribute("hidden");
     redraw();
@@ -395,6 +440,9 @@ Object.entries(MillingType)
         opt.value = entry[1];
         millingTypeSelect.add(opt);
     });
+
+savedPinType = addPinTypeSelect.value;
+savedMillingType = millingTypeSelect.value;
 
 registerAllListeners();
 

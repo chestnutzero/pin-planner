@@ -1,4 +1,4 @@
-export default {
+const data = {
     "KeyPin": {
         "serializationPrefix": "k",
         "points": [
@@ -98,3 +98,11 @@ export default {
         "displayName": "Serrated"
     }
 }
+
+export default Object.fromEntries(Object.entries(data)
+    .map(entry => {
+        const value = entry[1];
+        value.pinTypeOptionValue = entry[0];
+        return [entry[0], value];
+    })
+);
