@@ -147,8 +147,9 @@ export class Chamber {
 
     getBiblePoints(innerWidth, outerWidth, height) {
         // First add all points for the left side
-        const outerX = 0;
         const innerX = (outerWidth - innerWidth) / 2;
+        // Add a 15% padding between edge of countermilling and edge of chamber zone
+        const outerX = .15 * innerX;
         const points = [];
         switch (this.millingType) {
             case MillingType.Threaded:
