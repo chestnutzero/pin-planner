@@ -15,6 +15,7 @@ export class JSONPremadePin extends Pin {
         super(points, pinJSON.pinHeight);
         super.setHeight(pinHeight);
         this.serializationPrefix = pinJSON.serializationPrefix;
+        this.pinTypeOptionValue = pinJSON.pinTypeOptionValue;
     }
 
     serialize() {
