@@ -4,10 +4,10 @@ import History from "../data/history.js";
 
 const chambersParam = "c";
 
-function loadFromString(serializedChambers) {
+function loadFromString(crushedChambers) {
     try {
-        console.debug("Raw serialized chambers:", serializedChambers);
-        let rawChambers = JSON.parse(Crusher.uncrush(decodeURIComponent(serializedChambers)));
+        console.debug("Raw serialized chambers:", crushedChambers);
+        let rawChambers = JSON.parse(Crusher.uncrush(crushedChambers));
         console.debug("Raw chambers: " + rawChambers);
         let chamberIdx = 0;
         let result = [];
@@ -28,7 +28,7 @@ function loadFromString(serializedChambers) {
         console.log("Loaded chambers", result);
         return result;
     } catch (e) {
-        console.debug("Malformed query param", e);
+        console.log("Malformed query param", e);
         return [];
     }
 }
@@ -43,18 +43,26 @@ function loadFromUrlParams() {
 }
 
 function updateUrlParams(chambers) {
-    let serializedChambers = encodeURIComponent(Crusher.crush(JSON.stringify(chambers.map(c => c.serialize()))));
+    const crushedChambers = Crusher.crush(JSON.stringify(chambers.map(c => c.serialize())));
+    const serializedChambers = encode(crushedChambers);
     let newUrl = window.location.origin + window.location.pathname + "?c=" + serializedChambers;
+    console.debug("Updating url to", newUrl);
     window.history.replaceState({path:newUrl}, "", newUrl);
-    History.updateCurrentData(serializedChambers);
+    History.updateCurrentData(crushedChambers);
 }
 
 /**
  * Used to update the url params in the browser after moving around in history
  */
-function updateUrlParamsRaw(serializedChambers) {
-    let newUrl = window.location.origin + window.location.pathname + "?c=" + serializedChambers;
+function updateUrlParamsRaw(crushedChambers) {
+    let newUrl = window.location.origin + window.location.pathname + "?c=" + encode(crushedChambers);
     window.history.replaceState({path:newUrl}, "", newUrl);
+}
+
+function encode(str) {
+    return encodeURIComponent(str).replace(/[_!'()*]/g, function(c) {
+        return '%' + c.charCodeAt(0).toString(16);
+      });
 }
 
 export default {updateUrlParamsRaw, loadFromUrlParams, updateUrlParams, loadFromString};
