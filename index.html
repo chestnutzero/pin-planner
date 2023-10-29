@@ -39,6 +39,11 @@
     </div>
 
     <div id="planner-options">
+        <div id="metacontrols">
+            <button type="button" id="undo" disabled>Undo</button>
+            <button type="button" id="redo" disabled>Redo</button>
+            <button type="button" id="reset">Reset</button>
+        </div>
         <div id="options">
             <label for="pin-type">Pin type</label>
             <select name="pin-type" id="pin-type"></select>
@@ -46,7 +51,6 @@
             <select name="milling-type" id="milling-type"></select>
             <button id="add-pin" class="btn">Add pin</button>
             <button type="button" id="add-chamber">Add chamber</button>
-            <button type="button" id="reset">Reset</button>
 
             <div id="chamber-selected-options">
                 <button type="button" id="simulate-chamber" class="chamber-specific-btn" disabled>Simulate

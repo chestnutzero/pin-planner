@@ -18,7 +18,7 @@ export class JSONPremadePin extends Pin {
     }
 
     serialize() {
-        console.log("Serializing ", this);
+        console.debug("Serializing ", this);
         if (this.serializationPrefix) {
             return this.serializationPrefix + this.pinHeight;
         } else {

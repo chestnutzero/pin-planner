@@ -10,7 +10,7 @@ export const MillingType = {
 }
 
 export class Chamber {
-    constructor(pinStack = [], millingType=MillingType.Gin) {
+    constructor(pinStack = [], millingType=MillingType.None) {
         this.millingType = millingType;
         this.pinStack = pinStack;
         this.lastRenderMetadata = null;
@@ -141,7 +141,6 @@ export class Chamber {
             let point = points[i];
             points.push(new Point(outerWidth - point.x, point.y, point.lockRelativeToHeight));
         }
-        console.log("raw core points", points);
         return points;
     }
 

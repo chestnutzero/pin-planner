@@ -25,8 +25,8 @@ export class Pin {
     }
 
     serialize() {
-        console.log("Serializing points", this.points);
-        console.log("Plain serialization", JSON.stringify(this.points));
+        console.debug("Serializing points", this.points);
+        console.debug("Plain serialization", JSON.stringify(this.points));
         return JSON.stringify({ points: this.points.map(p => p.objToSerialize()), pinHeight: this.pinHeight },
             (key, val) =>
                 (val && val.toFixed) ? Number(val.toFixed(4)) : val

@@ -76,7 +76,7 @@ function isPinEditorOpen() {
 }
 
 function selectPoint(point, pointIdx, mirroredPointIdx = null) {
-    console.log("Selected point ", point);
+    console.debug("Selected point ", point);
     selectedNormalizedPoint = point;
     selectedPointIdx = pointIdx;
     selectedMirroredPointIdx = mirroredPointIdx;
@@ -86,7 +86,7 @@ function selectPoint(point, pointIdx, mirroredPointIdx = null) {
 }
 
 function resetPointSelection() {
-    console.log("Resetting point selection");
+    console.debug("Resetting point selection");
     selectedNormalizedPoint = null;
     selectedPointIdx = null;
     selectedMirroredPointIdx = null;
@@ -113,7 +113,7 @@ function handleClick(event) {
     }
 
     if (event.altKey) {
-        console.log("Alt key held");
+        console.debug("Alt key held");
         deleteSelectedPoint();
         return;
     }
@@ -121,7 +121,7 @@ function handleClick(event) {
 
     if (!isExistingPoint) {
         // Need to create a new point
-        console.log("Current points: %d", currentPin.points.length);
+        console.debug("Current points: %d", currentPin.points.length);
         currentPin.points.splice(pointIdx, 0, nearest);
         console.log("Created point at index %d, now points: %d", pointIdx, currentPin.points.length);
         if (mirroredEditor) {
@@ -170,19 +170,19 @@ function handleClick(event) {
 
 function deleteSelectedPoint() {
     if (selectedPointIdx == null) {
-        console.log("Doing nothing since no point selected");
+        console.debug("Doing nothing since no point selected");
         return;
     }
 
     // remove selected point
-    console.log("Removing point at %d", selectedPointIdx);
+    console.debug("Removing point at %d", selectedPointIdx);
     currentPin.points.splice(selectedPointIdx, 1);
     if (selectedMirroredPointIdx) {
         let mirroredIdxToDelete = selectedMirroredPointIdx;
         if (selectedMirroredPointIdx > selectedPointIdx) {
             mirroredIdxToDelete--;
         }
-        console.log("Removing point at %d", mirroredIdxToDelete);
+        console.debug("Removing point at %d", mirroredIdxToDelete);
         currentPin.points.splice(mirroredIdxToDelete, 1);
     }
 
@@ -204,10 +204,10 @@ function handleMouseDown(event) {
         let { nearest, pointIdx, isExistingPoint } = closestPointToPos(normalizedMouseX, normalizedMouseY);
 
         if (pointIdx == selectedPointIdx) {
-            console.log("Mouse down near selected point, beginning drag");
+            console.debug("Mouse down near selected point, beginning drag");
             isDragging = true;
         } else if (pointIdx == selectedMirroredPointIdx) {
-            console.log("Mouse down near mirrored selected point, switching that to be active selected point then beginning drag");
+            console.debug("Mouse down near mirrored selected point, switching that to be active selected point then beginning drag");
             handleClick(event);
             isDragging = true;
         }
@@ -331,7 +331,7 @@ function closestPointToPos(x, y) {
             let qq = (qx * qx) + (qy * qy);
 
             if (qq < nearestNormsqr && qq < .01) {
-                console.log("Checking point ", i, "qq val is ", qq);
+                console.debug("Checking point ", i, "qq val is ", qq);
                 nearest = q
                 nearestNormsqr = qq
                 bestT = t;
@@ -352,13 +352,13 @@ function closestPointToPos(x, y) {
         nearestNormsqr = Number.MAX_VALUE;
     }
 
-    console.log("Nearest point is", nearest, existingPointIdx, isExistingPoint);
+    console.debug("Nearest point is", nearest, existingPointIdx, isExistingPoint);
 
     return { nearest, pointIdx: existingPointIdx, isExistingPoint };
 }
 
 function redraw() {
-    console.log("Redrawing pin editor");
+    console.debug("Redrawing pin editor");
 
     let h = canvas.height - 10;
     const widthToHeightRatio = 4 / currentPin.pinHeight;
@@ -424,13 +424,13 @@ pointY.addEventListener('input', evt => {
     }
 });
 lockDropDown.addEventListener('input', evt => {
-    console.log("Value changed to", evt);
+    console.debug("Value changed to", evt);
     if (selectedNormalizedPoint) {
         let selectedOption = evt.target.selectedOptions[0];
         let newLValue = null;
         if (selectedOption.attributes.lvalue != null) {
             newLValue = parseFloat(selectedOption.attributes.lvalue.value);
-            console.log("New l value ", newLValue, "parsed from ", selectedOption.attributes.lvalue)
+            console.debug("New l value ", newLValue, "parsed from ", selectedOption.attributes.lvalue)
         } else if (selectedOption.value == "custom" && selectedNormalizedPoint.lockRelativeToHeight != null) {
             pointLockCustomValue.value = selectedNormalizedPoint.lockRelativeToHeight;
         }
