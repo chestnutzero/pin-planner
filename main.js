@@ -258,7 +258,6 @@ canvas.addEventListener("mousemove", event => {
 canvas.addEventListener("touchmove", event => {
     if (event.touches.length == 1) {
         event = shimTouchEvent(event);
-        console.log("touch move event", event);
     }
     if (Simulator.isOpen()) {
         return;
@@ -299,7 +298,6 @@ canvas.addEventListener("mousedown", event => {
 });
 canvas.addEventListener("touchstart", event => {
     if (event.touches.length == 1) {
-        console.log("touch event", event);
         handleMouseDown(shimTouchEvent(event));
     }
 });
@@ -322,7 +320,6 @@ canvas.addEventListener("mouseup", event => {
 canvas.addEventListener("touchend", event => {
     if (event.touches.length == 0 && event.changedTouches.length == 1) {
         event = shimTouchEvent(event);
-        console.log("touch ended", event);
         handleMouseUp(event);
         handleClick(event);
     }
