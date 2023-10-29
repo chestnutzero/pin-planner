@@ -95,7 +95,7 @@ function getPinBody(pin) {
     const pinBodyBottom = body.bounds.max.y;
     Matter.Body.setPosition(body, {x: body.position.x, y: body.position.y + desiredBottom - pinBodyBottom});
 
-    console.log("Built pin", body, "from vertices", vertices);
+    console.debug("Built pin", body, "from vertices", vertices);
 
     // console.log("Initial body", body);
     // console.log("Vertices", vertices);
@@ -183,7 +183,7 @@ function chamberVertices(innerWidth, outerWidth, height, vertices, openSideUp = 
         points.push({ x: 0, y: height + topPadding + bottomPadding });
         points.push({ x: 0, y: 0 });
     }
-    console.log("Built points for chamber", points);
+    console.debug("Built points for chamber", points);
     return points;
 }
 

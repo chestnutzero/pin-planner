@@ -90,8 +90,8 @@ function drawChamber(chamber, chamberNum, chamberWidth, chamberHeight) {
 // Pin is an array of points normalized to 1x1 rect
 // Origin starting at bottom left corner
 // will be rescaled to w by h rect at (x, y)
-function drawPin(pin, x, y, w, h) {
-    drawPinPath(pin, x, y, w, h);
+function drawPin(pin, x, y, w, h, updateLastRenderMetadata = true) {
+    drawPinPath(pin, x, y, w, h, updateLastRenderMetadata);
     ctx.fill();
 }
 
@@ -105,7 +105,7 @@ function drawPinPoints(pin, x, y, w, h) {
     });
 }
 
-function drawPinPath(pin, x, y, w, h) {
+function drawPinPath(pin, x, y, w, h, updateLastRenderMetadata = true) {
     ctx.moveTo(x, y);
     ctx.beginPath();
     pin.points.forEach(point => {
@@ -114,12 +114,14 @@ function drawPinPath(pin, x, y, w, h) {
         ctx.lineTo(px, py);
     });
     ctx.closePath();
-    pin.lastRenderMetadata = new DOMRect(x, y, w, h);
+    if (updateLastRenderMetadata) {
+        pin.lastRenderMetadata = new DOMRect(x, y, w, h);
+    }
 }
 
 // Coordinates use bottom left as origin for ease of use
 function findPinUnderCoordinates(chambers, x, y) {
-    console.log("Searching chambers ", chambers, "for coordinates", x, y);
+    console.debug("Searching chambers ", chambers, "for coordinates", x, y);
 
     if (chambers.length == 0) {
         return {};
@@ -138,13 +140,14 @@ function findPinUnderCoordinates(chambers, x, y) {
     for (let pin of chamber.pinStack) {
         let pinRect = pin.lastRenderMetadata;
         if (pinRect.contains(x, y)) {
+            console.debug("Found match, pinrect", pinRect, "does contain", x, y, "from pin", pin);
             foundPin = pin;
             break;
         }
         pinIdx++;
     }
 
-    console.log("Found match: %s, pin: %s", foundPin, pinIdx);
+    console.debug("Found match", foundPin, "pin", pinIdx);
 
     return {chamber, pin:foundPin, pinIdx, chamberIdx};
 }

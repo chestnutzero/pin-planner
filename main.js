@@ -21,6 +21,11 @@ let selectedChamber, selectedPin;
 let mouseDownX, mouseDownY;
 let dragging = false;
 
+export function setChambers(newChambers) {
+    chambers = newChambers;
+    redraw();
+}
+
 export function addChamber(chamber) {
     const idx = chambers.push(chamber) - 1;
     chamber.chambers = chambers;
@@ -52,7 +57,7 @@ function setCanvasSize() {
     // Having pin points use bottom left origin and canvas us top left origin is annoying
     // Just use bottom left origin for everything
     ctx.transform(1, 0, 0, -1, 0, canvas.height)
-    console.log("resizing");
+    console.debug("resizing");
     redraw();
     if (PinEditor.isPinEditorOpen()) {
         PinEditor.redraw();
@@ -121,7 +126,7 @@ function handleClick(event) {
     if (Simulator.isOpen()) {
         return;
     }
-    console.log("click");
+    console.debug("click");
     if (PinEditor.isPinEditorOpen()) {
         PinEditor.handleClick(event);
         return;
@@ -217,7 +222,7 @@ canvas.addEventListener("mousemove", event => {
                 const mouseY = canvasBounds.height - (event.clientY - canvasBounds.top);
                 redraw();
                 ctx.fillStyle = "#aaae";
-                drawPin(selectedPin, mouseX - 25, mouseY, 50, 50 * selectedPin.pinHeight / chamberHeightToWidthRatio);
+                drawPin(selectedPin, mouseX - 25, mouseY, 50, 50 * selectedPin.pinHeight / chamberHeightToWidthRatio, false);
             } else if (!dragging) {
                 // Make sure clicks don't register as drags
                 if (Math.max(Math.abs(event.clientX - mouseDownX), Math.abs(event.clientY - mouseDownY) > 10)) {
@@ -286,7 +291,6 @@ document.getElementById("decrease-pin-height").addEventListener("click", () => {
 });
 
 document.getElementById("mirrored-editor").addEventListener("change", event => {
-    console.log(event);
     PinEditor.setMirroredEditor(event.target.checked);
 });
 
@@ -346,7 +350,6 @@ function onPinEditorExit() {
 }
 
 export function redraw() {
-    console.log("Redrawing chambers");
     redrawChambers(chambers);
 }
 
@@ -374,6 +377,7 @@ export function simulateSelectedChamber() {
 }
 
 chambers = UrlManager.loadFromUrlParams();
+UrlManager.updateUrlParams(chambers);
 redraw();
 
 // Populate pintype options from our json data
