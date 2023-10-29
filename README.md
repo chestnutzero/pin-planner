@@ -1,4 +1,6 @@
 # pin-planner
+https://chestnutzero.github.io/pin-planner
+
 A tool to build and share challenge lock designs, simulate picking, and more!
 ![download (1)](https://github.com/chestnutzero/pin-planner/assets/1626151/e1a582c8-35f3-4894-8d06-3f7538d2270a)
 
