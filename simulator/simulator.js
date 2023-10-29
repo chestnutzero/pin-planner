@@ -19,7 +19,6 @@ const Engine = Matter.Engine,
     Vector = Matter.Vector;
 
 // create an engine
-const engine = Engine.create();
 
 // create a renderer
 // const render = Render.create({
@@ -30,8 +29,6 @@ const engine = Engine.create();
 //     }
 // });
 // render.canvas.hidden = true;
-
-const world = engine.world;
 
 const friction = 0.05;
 const frictionStatic = .1;
@@ -75,6 +72,9 @@ let pins;
 
 let rotationForceConstraint, pickForceConstraint, mouseConstraint;
 let animationStarted = false;
+
+let engine;
+let world;
 
 function getPinBody(pin) {
     const lastRenderMetadata = pin.lastRenderMetadata;
@@ -188,6 +188,8 @@ function chamberVertices(innerWidth, outerWidth, height, vertices, openSideUp = 
 }
 
 function openSimulator(chamber, callback = () => {}) {
+    engine = Engine.create();
+    world = engine.world;
     onCloseCallback = callback;
     open = true;
     Composite.clear(world);
@@ -204,7 +206,7 @@ function openSimulator(chamber, callback = () => {}) {
       });
 
     Matter.Events.on(engine, 'beforeUpdate', function () {
-        if (mouseConstraint.constraint.pointB) {
+        if (mouseConstraint.constraint.bodyB && mouseConstraint.constraint.pointB) {
             const clickedBody = mouseConstraint.constraint.bodyB;
             let yForce = -.001 * ((mouseConstraint.body.position.y + mouseConstraint.constraint.pointB.y) - mouseConstraint.constraint.pointA.y);
             const bodySpeedY = mouseConstraint.body.velocity.y;
@@ -220,6 +222,7 @@ function openSimulator(chamber, callback = () => {}) {
             Matter.Body.applyForce(clickedBody, clickedBody.position, { x: xForce, y: yForce});
         }
     });
+    console.log("Added beforeUpdate listener to", engine);
 
     rotationForceConstraint = Constraint.create({
         bodyA: core,
@@ -370,6 +373,8 @@ function isOpen() {
 function closeSimulator() {
     currentChamber = null;
     Runner.stop(runner);
+    Engine.clear(engine);
+    console.log("Cleared engine", engine);
     animationStarted = false;
     open = false;
     onCloseCallback();
