@@ -86,8 +86,9 @@ export class Chamber {
     getCorePoints(innerWidth, outerWidth, height) {
         let points = [];
         // First add all points for the left side
-        const outerX = 0;
         const innerX = (outerWidth - innerWidth) / 2;
+        // Add a 15% padding between edge of countermilling and edge of chamber zone
+        const outerX = .15 * innerX;
         switch (this.millingType) {
             case MillingType.Gin:
                 points.push(new Point(innerX, 0));
