@@ -157,6 +157,7 @@ function resetPinSelection() {
 
 function handleClick(event) {
     if (Simulator.isOpen()) {
+        console.log("ignoring click because simulator is open");
         return;
     }
     console.debug("click");
@@ -249,27 +250,59 @@ canvas.addEventListener("mousemove", event => {
         }
     } else {
         if (mouseDown) {
-            if (dragging && selectedPin) {
-                let canvasBounds = canvas.getBoundingClientRect();
-                const mouseX = event.clientX - canvasBounds.left;
-                const mouseY = canvasBounds.height - (event.clientY - canvasBounds.top);
-                redraw();
-                ctx.fillStyle = "#aaae";
-                drawPin(selectedPin, mouseX - 25, mouseY, 50, 50 * selectedPin.pinHeight / chamberHeightToWidthRatio, false);
-            } else if (!dragging) {
-                // Make sure clicks don't register as drags
-                if (Math.max(Math.abs(event.clientX - mouseDownX), Math.abs(event.clientY - mouseDownY) > 10)) {
-                    // Autoselect pin under mouse when a drag event starts
-                    resetPinSelection();
-                    handleClick(event);
-                    dragging = true;
-                }
-            }
+            handleMouseDrag(event);
         }
     }
 });
 
+canvas.addEventListener("touchmove", event => {
+    if (event.touches.length == 1) {
+        event = shimTouchEvent(event);
+    }
+    if (Simulator.isOpen()) {
+        return;
+    }
+    if (PinEditor.isPinEditorOpen()) {
+            PinEditor.handleMouseDrag(event);
+    } else {
+        handleMouseDrag(event);
+    }
+});
+
+function handleMouseDrag(event) {
+    if (dragging && selectedPin) {
+        event.preventDefault();
+        let canvasBounds = canvas.getBoundingClientRect();
+        const mouseX = event.clientX - canvasBounds.left;
+        const mouseY = canvasBounds.height - (event.clientY - canvasBounds.top);
+        redraw();
+        ctx.fillStyle = "#aaae";
+        drawPin(selectedPin, mouseX - 25, mouseY, 50, 50 * selectedPin.pinHeight / chamberHeightToWidthRatio, false);
+    } else if (!dragging) {
+        console.log("Starting dragging");
+        // Make sure clicks don't register as drags
+        if (Math.max(Math.abs(event.clientX - mouseDownX), Math.abs(event.clientY - mouseDownY) > 10)) {
+            // Autoselect pin under mouse when a drag event starts
+            resetPinSelection();
+            handleClick(event);
+            if (selectedPin) {
+                event.preventDefault();
+            }
+            dragging = true;
+        }
+    }
+}
+
 canvas.addEventListener("mousedown", event => {
+    handleMouseDown(event);
+});
+canvas.addEventListener("touchstart", event => {
+    if (event.touches.length == 1) {
+        handleMouseDown(shimTouchEvent(event));
+    }
+});
+function handleMouseDown(event) {
+    event.preventDefault();
     if (Simulator.isOpen()) {
         return;
     }
@@ -279,8 +312,20 @@ canvas.addEventListener("mousedown", event => {
     if (PinEditor.isPinEditorOpen()) {
         PinEditor.handleMouseDown(event);
     }
-});
+}
+
 canvas.addEventListener("mouseup", event => {
+    handleMouseUp(event);
+});
+canvas.addEventListener("touchend", event => {
+    if (event.touches.length == 0 && event.changedTouches.length == 1) {
+        event = shimTouchEvent(event);
+        handleMouseUp(event);
+        handleClick(event);
+    }
+});
+function handleMouseUp(event) {
+    event.preventDefault();
     if (Simulator.isOpen()) {
         return;
     }
@@ -289,7 +334,7 @@ canvas.addEventListener("mouseup", event => {
     if (PinEditor.isPinEditorOpen()) {
         PinEditor.handleMouseUp(event);
     }
-});
+}
 
 document.getElementById("edit-pin").addEventListener("click", () => {
     if (selectedPin && !PinEditor.isPinEditorOpen()) {
@@ -419,6 +464,19 @@ export function simulateSelectedChamber() {
             redraw();
         });
     }
+}
+
+// Pick one of the touches as the clientX and clientY to use
+// We don't support multitouch
+function shimTouchEvent(event) {
+    if (event.touches.length > 0) {
+        event.clientX = event.touches[0].clientX;
+        event.clientY = event.touches[0].clientY;
+    } else if (event.changedTouches.length > 0) {
+        event.clientX = event.changedTouches[0].clientX;
+        event.clientY = event.changedTouches[0].clientY;
+    }
+    return event;
 }
 
 chambers = UrlManager.loadFromUrlParams();
