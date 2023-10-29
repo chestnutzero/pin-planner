@@ -327,7 +327,7 @@ document.getElementById("add-pin").addEventListener("click", () => {
     } else {
         let chamberToAdd = null;
         for (let i=0; i<chambers.length && chamberToAdd == null; i++) {
-            if (chambers[i].pinStack.length == 1) {
+            if (chambers[i].pinStack.length <= 1) {
                 chamberToAdd = chambers[i];
             }
         }
