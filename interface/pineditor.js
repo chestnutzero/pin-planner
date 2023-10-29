@@ -223,6 +223,10 @@ function handleMouseDrag(event) {
     const normalizedMouseX = Math.min(Math.max((mouseCoords[0] - pinRect.x) / pinRect.width, 0), 1);
     const normalizedMouseY = Math.min(Math.max((mouseCoords[1] - pinRect.y) / pinRect.height, 0), 1);
 
+    if (selectedNormalizedPoint || selectedMirroredPointIdx) {
+        event.preventDefault();
+    }
+
     if (selectedNormalizedPoint) {
         currentPin.points[selectedPointIdx].x = normalizedMouseX;
         currentPin.points[selectedPointIdx].y = normalizedMouseY;

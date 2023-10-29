@@ -73,7 +73,7 @@ var runner = Runner.create();
 let currentChamber;
 let pins;
 
-let rotationForceConstraint, pickForceConstraint;
+let rotationForceConstraint, pickForceConstraint, mouseConstraint;
 let animationStarted = false;
 
 function getPinBody(pin) {
@@ -187,8 +187,8 @@ function chamberVertices(innerWidth, outerWidth, height, vertices, openSideUp = 
     return points;
 }
 
-function openSimulator(chamber, onCloseCallback = () => {}) {
-    this.onCloseCallback = onCloseCallback;
+function openSimulator(chamber, callback = () => {}) {
+    onCloseCallback = callback;
     open = true;
     Composite.clear(world);
     currentChamber = chamber;
@@ -199,19 +199,9 @@ function openSimulator(chamber, onCloseCallback = () => {}) {
         let pinBody = getPinBody(pin);
         pins.push(pinBody);
     }
-    let mouseConstraint = Matter.MouseConstraint.create(engine, {
+    mouseConstraint = Matter.MouseConstraint.create(engine, {
         element: canvas,
       });
-    let coreMouseConstraint = Matter.MouseConstraint.create(engine, {
-        element: canvas,
-        constraint: {
-            stiffness: 0.2,
-            render: {
-                visible: false
-            }
-        }
-    });
-    coreMouseConstraint.collisionFilter.mask = 4;
 
     Matter.Events.on(engine, 'beforeUpdate', function () {
         if (mouseConstraint.constraint.pointB) {
@@ -262,10 +252,7 @@ function openSimulator(chamber, onCloseCallback = () => {}) {
 
     const bodiesToAdd = [...pins, ground, core, bible];
 
-    // bodiesToAdd.push(springConstraint);
     bodiesToAdd.push(rotationForceConstraint);
-    bodiesToAdd.push(coreMouseConstraint);
-    // bodiesToAdd.push(mouseConstraint);
 
     Composite.add(world, bodiesToAdd);
 
@@ -385,7 +372,14 @@ function closeSimulator() {
     Runner.stop(runner);
     animationStarted = false;
     open = false;
-    this.onCloseCallback();
+    onCloseCallback();
+    if (mouseConstraint) {
+        console.log("Mouseconstraint:", mouseConstraint);
+        console.log("Attempting remove event listener", mouseConstraint.mouse.mousemove, "from element", mouseConstraint.mouse.element);
+        mouseConstraint.mouse.element.removeEventListener("touchmove", mouseConstraint.mouse.mousemove);
+        mouseConstraint.mouse.element.removeEventListener("touchstart", mouseConstraint.mouse.mousedown);
+        mouseConstraint.mouse.element.removeEventListener("touchend", mouseConstraint.mouse.mouseup);
+    }
 }
 
 export default {isOpen, openSimulator, closeSimulator, getPickHeight, setPickHeight, getTensionDist, setTensionDist};
