@@ -9,7 +9,7 @@ const lockDragControls = document.getElementById("lock-drag-controls-vertically"
 const chamberPaddingY = 10;
 // Leave a tiny gap between core and bible for realism
 // Gap between core and bible as percentage of chamber height
-const shearLineSpacing = .004;
+const shearLineSpacing = .005;
 
 // Settings that control spring forces and animation speeds
 const subSteps = 3;
