@@ -8,12 +8,13 @@ const lockDragControls = document.getElementById("lock-drag-controls-vertically"
 
 const chamberPaddingY = 10;
 // Leave a tiny gap between core and bible for realism
-const shearLineSpacing = 2;
+// Gap between core and bible as percentage of chamber height
+const shearLineSpacing = .004;
 
 // Settings that control spring forces and animation speeds
 const subSteps = 3;
-let rotationForceStiffness = .0005;
-const rotationForceDamping = .04;
+let rotationForceStiffness = .0008;
+const rotationForceDamping = .02;
 let rotationOffset = 150;
 
 // Standard pin area per sq unit that we base spring force calculations on
@@ -26,9 +27,9 @@ const mouseConstraintStiffnessX = .05;
 const mouseConstraintStiffnessY = .08;
 const mouseConstraintDamping = .5;
 
-const springConstraintStiffness = 0.001;
+const springConstraintStiffness = 0.00001;
 const springConstraintDamping = 0.001;
-const friction = 0.001;
+const friction = 0.04;
 const frictionStatic = .5;
 const gravity = 2;
 
@@ -162,11 +163,12 @@ function getChamberBodies(chamber) {
 
     // Reposition to match desired bounds
     const bibleBottom = bibleBody.bounds.max.y;
+    const shearLineSpacingPixels = shearLineSpacing * lastRenderMetadata.height;
     Matter.Body.setPosition(
         bibleBody, 
         {
             x: bibleBody.position.x, 
-            y: bibleBody.position.y + (midLine - shearLineSpacing) - bibleBottom
+            y: bibleBody.position.y + (midLine - shearLineSpacingPixels) - bibleBottom
         });
 
     const coreBottom = coreBody.bounds.max.y;
