@@ -461,6 +461,7 @@ export function simulateSelectedChamber() {
         Simulator.openSimulator(selectedChamber, () => {
             plannerOpts.removeAttribute("hidden")
             simulatorControls.setAttribute("hidden", true);
+            resetPinSelection();
             redraw();
         });
     }

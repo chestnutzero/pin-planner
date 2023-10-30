@@ -5,9 +5,32 @@ const ctx = canvas.getContext("2d");
 
 const lockDragControls = document.getElementById("lock-drag-controls-vertically");
 
+
 const chamberPaddingY = 10;
 // Leave a tiny gap between core and bible for realism
 const shearLineSpacing = 2;
+
+// Settings that control spring forces and animation speeds
+const subSteps = 3;
+let rotationForceStiffness = .0005;
+const rotationForceDamping = .04;
+let rotationOffset = 150;
+
+// Standard pin area per sq unit that we base spring force calculations on
+// If a pin is smaller, we'll scale up its density, and scale down if it's larger
+const baselinePinArea = 400 * 200 / 7;
+// Same for chamber area, but this is for total chamber size, not per unit of height
+const baselineCoreArea = 200 * 200;
+
+const mouseConstraintStiffnessX = .05;
+const mouseConstraintStiffnessY = .08;
+const mouseConstraintDamping = .5;
+
+const springConstraintStiffness = 0.001;
+const springConstraintDamping = 0.001;
+const friction = 0.001;
+const frictionStatic = .5;
+const gravity = 2;
 
 // module aliases
 const Engine = Matter.Engine,
@@ -29,9 +52,6 @@ const Engine = Matter.Engine,
 //     }
 // });
 // render.canvas.hidden = true;
-
-const friction = 0.05;
-const frictionStatic = .1;
 let open = false;
 let onCloseCallback = () => {};
 
@@ -72,6 +92,7 @@ let pins;
 
 let rotationForceConstraint, pickForceConstraint, mouseConstraint;
 let animationStarted = false;
+let registeredKeyListeners = false;
 
 let engine;
 let world;
@@ -94,6 +115,8 @@ function getPinBody(pin) {
     const desiredBottom = canvas.height - lastRenderMetadata.y;
     const pinBodyBottom = body.bounds.max.y;
     Matter.Body.setPosition(body, {x: body.position.x, y: body.position.y + desiredBottom - pinBodyBottom});
+    // Scale density with size - smaller pin footprint means more density, so our spring forces behave the same
+    Matter.Body.setDensity(body, .001 * baselinePinArea / (lastRenderMetadata.width * lastRenderMetadata.height / pin.pinHeight))
 
     console.debug("Built pin", body, "from vertices", vertices);
 
@@ -122,10 +145,9 @@ function getChamberBodies(chamber) {
     const negativeCoreVertices = chamberVertices(innerWidth, outerWidth, lastRenderMetadata.height / 2, coreVertices)
         .map(point => ({x: point.x, y:lastRenderMetadata.height/2 + 10 - point.y}));
     const coreBody = Bodies.fromVertices(coreCenterX, coreCenterY, negativeCoreVertices, 
-        { friction, frictionStatic, isStatic: false,
-        collisionFilter: {
-            mask: 4 | 4294967295
-        } });
+        { friction, frictionStatic, isStatic: false });
+    Matter.Body.setDensity(coreBody, .001 * baselineCoreArea / (lastRenderMetadata.width * lastRenderMetadata.height));
+    console.log("Built body with mass", coreBody.mass, "and density", coreBody.density);
 
     // Reposition to match desired bounds
     const coreTop = coreBody.bounds.min.y;
@@ -187,7 +209,7 @@ function chamberVertices(innerWidth, outerWidth, height, vertices, openSideUp = 
     return points;
 }
 
-function openSimulator(chamber, callback = () => {}) {
+function openSimulator(chamber, callback = () => { }) {
     engine = Engine.create();
     world = engine.world;
     onCloseCallback = callback;
@@ -203,23 +225,24 @@ function openSimulator(chamber, callback = () => {}) {
     }
     mouseConstraint = Matter.MouseConstraint.create(engine, {
         element: canvas,
-      });
+    });
 
     Matter.Events.on(engine, 'beforeUpdate', function () {
         if (mouseConstraint.constraint.bodyB && mouseConstraint.constraint.pointB) {
             const clickedBody = mouseConstraint.constraint.bodyB;
-            let yForce = -.001 * ((mouseConstraint.body.position.y + mouseConstraint.constraint.pointB.y) - mouseConstraint.constraint.pointA.y);
+            let yForce = -1 * mouseConstraintStiffnessY * ((mouseConstraint.body.position.y + mouseConstraint.constraint.pointB.y) - mouseConstraint.constraint.pointA.y);
             const bodySpeedY = mouseConstraint.body.velocity.y;
-            yForce = yForce - (bodySpeedY * .01);
+            yForce = yForce - (bodySpeedY * mouseConstraintDamping);
 
             let xForce = 0;
             if (!lockDragControls.checked || clickedBody.id === core.id) {
-                xForce = -.01 * ((mouseConstraint.body.position.x + mouseConstraint.constraint.pointB.x) - mouseConstraint.constraint.pointA.x);
+                xForce = -1 * mouseConstraintStiffnessX * ((mouseConstraint.body.position.x + mouseConstraint.constraint.pointB.x) - mouseConstraint.constraint.pointA.x);
                 const bodySpeedX = mouseConstraint.body.velocity.x;
-                xForce = xForce - (bodySpeedX * .01);
+                xForce = xForce - (bodySpeedX * mouseConstraintDamping);
             }
 
-            Matter.Body.applyForce(clickedBody, clickedBody.position, { x: xForce, y: yForce});
+            // console.log("xforce, yforce", xForce, yForce);
+            Matter.Body.applyForce(clickedBody, clickedBody.position, { x: xForce, y: yForce });
         }
     });
     console.log("Added beforeUpdate listener to", engine);
@@ -227,85 +250,117 @@ function openSimulator(chamber, callback = () => {}) {
     rotationForceConstraint = Constraint.create({
         bodyA: core,
         pointB: {
-            x: core.position.x + 90,
-            y: core.position.y},
-        stiffness: .0001,
-        damping: 0.008,
+            x: core.position.x + rotationOffset,
+            y: core.position.y
+        },
+        stiffness: rotationForceStiffness,
+        damping: rotationForceDamping,
         length: 0,
         render: {
             visible: false
         }
     });
+
+    if (!registeredKeyListeners) {
+        registeredKeyListeners = true;
+        document.addEventListener("keydown", (event) => {
+            if (event.repeat) {
+                return;
+            }
+            switch (event.key) {
+                case "a":
+                    rotationForceConstraint.pointB.x -= 75;
+                    rotationForceConstraint.damping += .005;
+                    // rotationForceConstraint.stiffness += .002;
+                    break;
+                case "s":
+                    rotationForceConstraint.pointB.x -= 75;
+                    rotationForceConstraint.damping += .005;
+                    break;
+                case "d":
+                    rotationForceConstraint.pointB.x += 75;
+                    rotationForceConstraint.damping += .005;
+                    break;
+                case "f":
+                    rotationForceConstraint.pointB.x += 75;
+                    rotationForceConstraint.damping += .005;
+                    // rotationForceConstraint.stiffness += .002;
+                    break;
+            }
+        });
+        document.addEventListener("keyup", (event) => {
+            switch (event.key) {
+                case "a":
+                    rotationForceConstraint.pointB.x += 75;
+                    rotationForceConstraint.damping -= .005;
+                    // rotationForceConstraint.stiffness -= .002;
+                    break;
+                case "s":
+                    rotationForceConstraint.pointB.x += 75;
+                    rotationForceConstraint.damping -= .005;
+                    break;
+                case "d":
+                    rotationForceConstraint.pointB.x -= 75;
+                    rotationForceConstraint.damping -= .005;
+                    break;
+                case "f":
+                    rotationForceConstraint.pointB.x -= 75;
+                    rotationForceConstraint.damping -= .005;
+                    // rotationForceConstraint.stiffness -= .002;
+                    break;
+            }
+        });
+    }
+
     const chamberCenterX = (chamber.lastRenderMetadata.left + chamber.lastRenderMetadata.right) / 2;
-    const chamberTop = canvas.height - chamber.lastRenderMetadata.top;
+    const chamberTop = canvas.height - (chamber.lastRenderMetadata.y + chamber.lastRenderMetadata.height);
     let springConstraint = Constraint.create({
         bodyA: pins[pins.length - 1],
         pointB: {
             x: chamberCenterX,
             y: chamberTop
         },
-        stiffness: .0001,
-        damping: 0,
-        length: chamber.lastRenderMetadata.height / 2,
+        stiffness: springConstraintStiffness,
+        damping: springConstraintDamping,
+        length: chamber.lastRenderMetadata.height,
         render: {
             visible: false
         }
     });
-    world.gravity.y = 1;
+    world.gravity.y = gravity;
 
     const bodiesToAdd = [...pins, ground, core, bible];
 
     bodiesToAdd.push(rotationForceConstraint);
+    bodiesToAdd.push(springConstraint);
 
     Composite.add(world, bodiesToAdd);
 
-    Runner.run(runner, engine);
+    // Runner.run(runner, engine);
 
-    const delta = 1000 / 60;
-    const subSteps = 3;
-    const subDelta = delta / subSteps;
-    let frameCount = 0;
+    // let frameCount = 0;
 
-    // document.addEventListener("keydown", (event) => {
-    //     event.preventDefault();
-
-
-
-    //     switch (event.key) {
-    //         case "ArrowLeft":
-    //             setTensionDist(getTensionDist() - .000025);
-    //             break;
-    //         case "ArrowRight":
-    //             setTensionDist(getTensionDist() + .000025);
-    //             break;
-    //         case "ArrowUp":
-    //             setPickHeight(getPickHeight() + .0001);
-    //             break;
-    //         case "ArrowDown":
-    //             setPickHeight(getPickHeight() - .0001);
-    //             break;
-    //     }
-    // });
     // render.canvas.hidden = false;
     renderToCanvas();
 
     if (!animationStarted) {
         animationStarted = true;
-        (function run() {
+        let lastTime;
+        (function run(time) {
             if (!open) {
                 return;
             }
             window.requestAnimationFrame(run);
-            if (frameCount++ == 20) {
-                Composite.add(world, rotationForceConstraint);
-                springConstraint.damping = 0.1;
-                springConstraint.stiffness = 0.001;
+            let deltaToUse = 1000 / 60 / subSteps;
+            if (lastTime) {
+                deltaToUse = (time - lastTime) / subSteps;
             }
+            lastTime = time;
             for (let i = 0; i < subSteps; i += 1) {
-                Matter.Body.setAngularVelocity(core, 0);
                 // Matter.Body.applyForce(core, core.position, {x: .001 * tensionDist, y: 0});
                 // Matter.Body.applyForce(pins[0], pins[0].position, {x: 0, y: -.001 * pickHeight})
-                Engine.update(engine, subDelta);
+                // Matter.Body.setAngularVelocity(core, 0);
+                Engine.update(engine, deltaToUse);
             }
             renderToCanvas();
         })();
