@@ -124,10 +124,11 @@ export class Chamber {
                 break;
             case MillingType.Threaded:
                 let inner = true;
-                for (let h = 0; h<=height; h+=height * .04) {
+                for (let h = 0; h<height; h+=height * .04) {
                     points.push(new Point(inner ? innerX : outerX, h));
                     inner = !inner;
                 }
+                points.push(new Point(inner ? innerX : outerX, height));
                 break;
             case MillingType.None:
             default:
