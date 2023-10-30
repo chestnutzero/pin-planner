@@ -9,7 +9,7 @@ const lockDragControls = document.getElementById("lock-drag-controls-vertically"
 const chamberPaddingY = 10;
 // Leave a tiny gap between core and bible for realism
 // Gap between core and bible as percentage of chamber height
-const shearLineSpacing = .004;
+const shearLineSpacing = .005;
 
 // Settings that control spring forces and animation speeds
 const subSteps = 3;
@@ -21,7 +21,7 @@ let rotationOffset = 150;
 // If a pin is smaller, we'll scale up its density, and scale down if it's larger
 const baselinePinArea = 400 * 200 / 7;
 // Same for chamber area, but this is for total chamber size, not per unit of height
-const baselineCoreArea = 200 * 200;
+const targetCoreMass = 50;
 
 const mouseConstraintStiffnessX = .05;
 const mouseConstraintStiffnessY = .08;
@@ -147,7 +147,7 @@ function getChamberBodies(chamber) {
         .map(point => ({x: point.x, y:lastRenderMetadata.height/2 + 10 - point.y}));
     const coreBody = Bodies.fromVertices(coreCenterX, coreCenterY, negativeCoreVertices, 
         { friction, frictionStatic, isStatic: false });
-    Matter.Body.setDensity(coreBody, .001 * baselineCoreArea / (lastRenderMetadata.width * lastRenderMetadata.height));
+    Matter.Body.setDensity(coreBody, coreBody.density * targetCoreMass / coreBody.mass);
     console.log("Built body with mass", coreBody.mass, "and density", coreBody.density);
 
     // Reposition to match desired bounds
@@ -180,7 +180,7 @@ function getChamberBodies(chamber) {
 function chamberVertices(innerWidth, outerWidth, height, vertices, openSideUp = true) {
     const points = [];
     // const paddingX = (outerWidth - innerWidth) / 2;
-    let paddingX = 150;
+    let paddingX = canvas.width * 2;
     let bottomPadding = openSideUp ? chamberPaddingY : 0;
     let topPadding = openSideUp ? 0 : chamberPaddingY;
     for (let i = 0; i < vertices.length / 2; i++) {
@@ -218,7 +218,6 @@ function openSimulator(chamber, callback = () => { }) {
     open = true;
     Composite.clear(world);
     currentChamber = chamber;
-    let h = 480;
     pins = [];
     const [ground, core, bible] = getChamberBodies(chamber);
     for (let pin of chamber.pinStack) {
@@ -252,7 +251,8 @@ function openSimulator(chamber, callback = () => { }) {
     rotationForceConstraint = Constraint.create({
         bodyA: core,
         pointB: {
-            x: core.position.x + rotationOffset,
+            // Scale down tension dist based on canvas size
+            x: core.position.x + Math.max(100, (rotationOffset * canvas.width / 1400)),
             y: core.position.y
         },
         stiffness: rotationForceStiffness,
