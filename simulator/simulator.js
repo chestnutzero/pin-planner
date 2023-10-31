@@ -26,6 +26,7 @@ const targetCoreMass = 50;
 const mouseConstraintStiffnessX = .05;
 const mouseConstraintStiffnessY = .08;
 const mouseConstraintDamping = .5;
+const maxMouseForce = 15;
 
 const springConstraintStiffness = 0.00001;
 const springConstraintDamping = 0.001;
@@ -242,7 +243,11 @@ function openSimulator(chamber, callback = () => { }) {
                 xForce = xForce - (bodySpeedX * mouseConstraintDamping);
             }
 
-            // console.log("xforce, yforce", xForce, yForce);
+            xForce = Math.min(15, Math.max(-15, xForce));
+            yForce = Math.min(15, Math.max(-15, yForce));
+
+
+            console.log("xforce, yforce", xForce, yForce);
             Matter.Body.applyForce(clickedBody, clickedBody.position, { x: xForce, y: yForce });
         }
     });
