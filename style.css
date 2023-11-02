@@ -59,3 +59,12 @@ button#delete-pin:not(:disabled) {
 button#reset:not(:disabled) {
   background-color:rgb(249, 122, 122);
 }
+
+footer {
+  padding-top: 5%;
+  font-size: .8em;
+}
+
+.monospace {
+  font-family:'Courier New', Courier, monospace;
+}
