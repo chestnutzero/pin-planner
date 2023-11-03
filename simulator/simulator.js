@@ -9,7 +9,8 @@ const lockDragControls = document.getElementById("lock-drag-controls-vertically"
 const chamberPaddingY = 10;
 // Leave a tiny gap between core and bible for realism
 // Gap between core and bible as percentage of chamber height
-const shearLineSpacing = .005;
+const shearLineSpacing = 0;
+const chamberWidthJitter = 2;
 
 // Settings that control spring forces and animation speeds
 const subSteps = 3;
@@ -44,53 +45,18 @@ const Engine = Matter.Engine,
     Vector = Matter.Vector;
 
 // create an engine
-
-// create a renderer
-// const render = Render.create({
-//     element: document.body,
-//     engine: engine,
-//     options: {
-//         wireframes: false
-//     }
-// });
 // render.canvas.hidden = true;
 let open = false;
-let onCloseCallback = () => {};
-
-// create two boxes and a ground
-// var ground = Bodies.rectangle(0, canvas.height - 70, canvas.width, 70, { isStatic: false });
-// var coreBottom = Bodies.rectangle(200, 610, 207, 60, { isStatic: false, friction, frictionStatic });
-// var coreLeftBottom = Bodies.rectangle(8, 382, 300, 5, { isStatic: false, friction, frictionStatic });
-// var coreLeftTop = Bodies.rectangle(8, 490, 300, 180, { isStatic: false, friction, frictionStatic });
-// var coreRight = Bodies.rectangle(392, 480, 300, 200, { isStatic: false, friction, frictionStatic });
-// coreLeftBottom.frictionStatic = frictionStatic;
-// coreLeftTop.frictionStatic = frictionStatic;
-// coreRight.frictionStatic = frictionStatic;
-
-// let core = Matter.Body.create();
-// Matter.Body.setParts(core, [coreBottom, coreLeftBottom, coreLeftTop, coreRight]);
-// core.frictionStatic = frictionStatic;
-
-// var bibleLeft = Bodies.rectangle(6, 280, 300, 200, { isStatic: true, friction, frictionStatic });
-// var bibleRight = Bodies.rectangle(394, 280, 300, 200, { isStatic: true, friction, frictionStatic });
-// let bibleTop = Bodies.rectangle(0, 150, 1000, 60, { isStatic: true, friction, frictionStatic });
-// bibleLeft.frictionStatic = frictionStatic;
-// bibleRight.frictionStatic = frictionStatic;
+let onCloseCallback = () => { };
 
 // let bible = Matter.Body.create({ isStatic: true });
 // Matter.Body.setParts(bible, [bibleTop, bibleLeft, bibleRight]);
-// bible.frictionStatic = frictionStatic;
-
-// add all of the bodies to the world
-
-// run the renderer
-// Render.run(render);
 
 // create runner
-var runner = Runner.create();
+// var runner = Runner.create();
 
 let currentChamber;
-let pins;
+// let pins;
 
 let rotationForceConstraint, pickForceConstraint, mouseConstraint;
 let animationStarted = false;
@@ -116,6 +82,7 @@ function getPinBody(pin) {
     // ;)
     const desiredBottom = canvas.height - lastRenderMetadata.y;
     const pinBodyBottom = body.bounds.max.y;
+    // TODO: Remove hardcoded offset of 50
     Matter.Body.setPosition(body, {x: body.position.x, y: body.position.y + desiredBottom - pinBodyBottom});
     // Scale density with size - smaller pin footprint means more density, so our spring forces behave the same
     Matter.Body.setDensity(body, .001 * baselinePinArea / (lastRenderMetadata.width * lastRenderMetadata.height / pin.pinHeight))
@@ -138,7 +105,7 @@ function getChamberBodies(chamber) {
     // This represents the entire chamber
     const lastRenderMetadata = chamber.lastRenderMetadata;
 
-    const {innerWidth, outerWidth} = getChamberWidth(lastRenderMetadata.width);
+    const { innerWidth, outerWidth } = getChamberWidth(lastRenderMetadata.width);
     const midLine = canvas.height - (lastRenderMetadata.bottom + lastRenderMetadata.top) / 2;
 
     const coreVertices = chamber.getCorePoints(innerWidth, outerWidth, lastRenderMetadata.height / 2);
@@ -153,27 +120,27 @@ function getChamberBodies(chamber) {
 
     // Reposition to match desired bounds
     const coreTop = coreBody.bounds.min.y;
-    Matter.Body.setPosition(coreBody, {x: coreBody.position.x, y: coreBody.position.y + midLine - coreTop});
+    Matter.Body.setPosition(coreBody, { x: coreBody.position.x, y: coreBody.position.y + midLine - coreTop });
 
     const bibleVertices = chamber.getBiblePoints(innerWidth, outerWidth, lastRenderMetadata.height / 2);
     const bibleCenterX = (lastRenderMetadata.left + lastRenderMetadata.right) / 2;
     const bibleCenterY = canvas.height - (3 * (lastRenderMetadata.bottom + lastRenderMetadata.top) / 4);
     const negativeBibleVertices = chamberVertices(innerWidth, outerWidth, lastRenderMetadata.height / 2, bibleVertices, false)
-        .map(point => ({x: point.x, y:lastRenderMetadata.height/2 + 10 - point.y}));
+        .map(point => ({ x: point.x, y: lastRenderMetadata.height / 2 + 10 - point.y }));
     const bibleBody = Bodies.fromVertices(bibleCenterX, bibleCenterY, negativeBibleVertices, { friction, frictionStatic, isStatic: true });
 
     // Reposition to match desired bounds
     const bibleBottom = bibleBody.bounds.max.y;
     const shearLineSpacingPixels = shearLineSpacing * lastRenderMetadata.height;
     Matter.Body.setPosition(
-        bibleBody, 
+        bibleBody,
         {
             x: bibleBody.position.x, 
             y: bibleBody.position.y + (midLine - shearLineSpacingPixels) - bibleBottom
         });
 
     const coreBottom = coreBody.bounds.max.y;
-    const ground = Bodies.rectangle(canvas.width / 2, coreBottom + 50, canvas.width * 2, 100, {isStatic: true});
+    const ground = Bodies.rectangle(canvas.width / 2, coreBottom + 50, canvas.width * 2, 100, { isStatic: true });
 
     return [ground, coreBody, bibleBody];
 }
@@ -181,12 +148,13 @@ function getChamberBodies(chamber) {
 function chamberVertices(innerWidth, outerWidth, height, vertices, openSideUp = true) {
     const points = [];
     // const paddingX = (outerWidth - innerWidth) / 2;
-    let paddingX = canvas.width * 2;
+    let paddingX = 2;
     let bottomPadding = openSideUp ? chamberPaddingY : 0;
     let topPadding = openSideUp ? 0 : chamberPaddingY;
+    const widthJitter = Math.random() * chamberWidthJitter - (chamberWidthJitter / 2);
     for (let i = 0; i < vertices.length / 2; i++) {
         points.push({
-            x: vertices[i].x + paddingX,
+            x: vertices[i].x + paddingX + widthJitter,
             y: vertices[i].y + bottomPadding
         });
     }
@@ -198,7 +166,7 @@ function chamberVertices(innerWidth, outerWidth, height, vertices, openSideUp = 
     }
     for (let i = vertices.length / 2; i < vertices.length; i++) {
         points.push({
-            x: vertices[i].x + paddingX,
+            x: vertices[i].x + paddingX - widthJitter,
             y: vertices[i].y + bottomPadding
         });
     }
@@ -212,22 +180,194 @@ function chamberVertices(innerWidth, outerWidth, height, vertices, openSideUp = 
     return points;
 }
 
-function openSimulator(chamber, callback = () => { }) {
+function buildCoreHolderBody(allCores, invertVertically = false) {
+    const vertices = [];
+    const firstCore = allCores[0];
+    const lastCore = allCores[allCores.length - 1];
+
+    const coreHolderPaddingX = 1500;
+    const coreHolderPaddingY = 100;
+    // Start at bottom left corner
+    vertices.push({
+        x: firstCore.bounds.min.x - coreHolderPaddingX, 
+        y: firstCore.bounds.max.y + coreHolderPaddingY
+    });
+    // Go up to parallel with the top of the first core
+    vertices.push({
+        x: firstCore.bounds.min.x - coreHolderPaddingX, 
+        y: firstCore.bounds.min.y
+    });
+    // Assume the core vertices go clockwise starting at the bottom left
+    // Add points surrounding the core's bounds
+    // First chamber:
+    /**
+     *2    3|      |6
+     *      |      |
+     *      |      |
+     *      |      |
+     *     4|______|5
+     * 
+     * 1
+     */
+    // Last chamber:
+    /**
+     *     1|      |4       5
+     *      |      |
+     *      |      |
+     *      |      |
+     *     2|______|3
+     * 
+     *                      6
+     */
+    for (let core of allCores) {
+        vertices.push({x: core.bounds.min.x, y: core.bounds.min.y});
+        vertices.push({x: core.bounds.min.x, y: core.bounds.max.y});
+        vertices.push({x: core.bounds.max.x, y: core.bounds.max.y});
+        vertices.push({x: core.bounds.max.x, y: core.bounds.min.y});
+    }
+
+    vertices.push({
+        x: lastCore.bounds.max.x + coreHolderPaddingX, 
+        y: lastCore.bounds.min.y
+    });
+    vertices.push({
+        x: lastCore.bounds.max.x + coreHolderPaddingX, 
+        y: lastCore.bounds.max.y + coreHolderPaddingY
+    });
+
+    const coreHolderBody = Bodies.fromVertices(0, 0, vertices, { isStatic: false });
+    if (invertVertically) {
+        Matter.Body.scale(coreHolderBody, 1, -1);
+        const targetMinX = firstCore.bounds.min.x - coreHolderPaddingX;
+        const targetMaxY = firstCore.bounds.max.y;
+
+        const currMinX = coreHolderBody.bounds.min.x;
+        const currMaxY = coreHolderBody.bounds.max.y;
+
+        Matter.Body.setPosition(coreHolderBody, {
+            x: coreHolderBody.position.x + targetMinX - currMinX,
+            y: coreHolderBody.position.y + targetMaxY - currMaxY
+        });
+    } else {
+        const targetMinX = firstCore.bounds.min.x - coreHolderPaddingX;
+        const targetMinY = firstCore.bounds.min.y;
+
+        const currMinX = coreHolderBody.bounds.min.x;
+        const currMinY = coreHolderBody.bounds.min.y;
+
+        Matter.Body.setPosition(coreHolderBody, {
+            x: coreHolderBody.position.x + targetMinX - currMinX,
+            y: coreHolderBody.position.y + targetMinY - currMinY
+        });
+    }
+
+    const targetMass = 100;
+    Matter.Body.setDensity(coreHolderBody, coreHolderBody.density * targetMass / coreHolderBody.mass);
+
+    return coreHolderBody;
+}
+
+function openSimulator(chambers, callback = () => { }) {
     engine = Engine.create();
+
+    // create a renderer
+    const render = Render.create({
+        element: document.body,
+        engine: engine,
+        options: {
+            wireframes: false
+        }
+    });
+    Matter.Render.run(render);
+
     world = engine.world;
     onCloseCallback = callback;
     open = true;
     Composite.clear(world);
-    currentChamber = chamber;
-    pins = [];
-    const [ground, core, bible] = getChamberBodies(chamber);
-    for (let pin of chamber.pinStack) {
-        let pinBody = getPinBody(pin);
-        pins.push(pinBody);
+
+    // let bible = Matter.Body.create({ isStatic: true });
+    // let ground = Matter.Body.create({ isStatic: true });
+    let allCores = [];
+    let allBibles = [];
+    let allPins = [];
+    let pinsByChamber = {};
+    for (let chamber of chambers) {
+        const [currGround, currCore, currBible] = getChamberBodies(chamber);
+        console.log("Built bodies", currGround, currCore, currBible, "from chamebr", chamber);
+        // allGrounds.push(currGround);
+        allCores.push(currCore);
+        allBibles.push(currBible);
+        pinsByChamber[chamber.chamberIdx] = [];
+        for (let pin of chamber.pinStack) {
+            let pinBody = getPinBody(pin);
+            allPins.push(pinBody);
+            pinsByChamber[chamber.chamberIdx].push(pinBody);
+        }
     }
+    const coreHolder = buildCoreHolderBody(allCores);
+    const bibleHolder = buildCoreHolderBody(allBibles, true);
+    Matter.Body.setStatic(bibleHolder, true);
+    // TODO: Reflect this across the x axis, then move vertically to match the shear line
+    
+
+    const ground = Bodies.rectangle(canvas.width/2, coreHolder.bounds.max.y + 250, canvas.width, 500, { isStatic: true });
+    // Matter.Body.setParts(core, allCores, false);
+    // Matter.Body.setParts(bible, allBibles, false);
     mouseConstraint = Matter.MouseConstraint.create(engine, {
         element: canvas,
     });
+
+    let coreStructureConstraints = [];
+    // const dist = (a,b) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+    // const sub = (a,b) => {
+    //     return {x: a.x - b.x, y: a.y - b.y};
+    // }
+    // const add = (a, b) => {
+    //     return {x: a.x + b.x, y: b.y + b.y};
+    // };
+    // for (let i=0; i<allCores.length - 1; i++) {
+    //         const core1 = allCores[i];
+    //         const core2 = allCores[i + 1];
+    //         const coreHeight = core1.bounds.max.y - core1.bounds.min.y
+    //         const coreWidth = core1.bounds.max.x - core1.bounds.min.x;
+    //         const topPoint = {
+    //             x: 0,
+    //             y: coreHeight / 3
+    //         };
+    //         const bottomPoint = {
+    //             x: 0,
+    //             y: 0 - (coreHeight / 3)
+    //         };
+    //         coreStructureConstraints.push(
+    //             Constraint.create({
+    //                 bodyA: core1,
+    //                 bodyB: core2,
+    //                 pointA: topPoint,
+    //                 pointB: bottomPoint,
+    //                 stiffness: 1,
+    //                 damping: 0,
+    //                 length: 10 + dist(add(topPoint, core1.position), add(bottomPoint, core2.position)),
+    //                 render: {
+    //                     visible: true
+    //                 }
+    //             })
+    //         );
+    //         coreStructureConstraints.push(
+    //             Constraint.create({
+    //                 bodyA: core1,
+    //                 bodyB: core2,
+    //                 pointA: bottomPoint,
+    //                 pointB: topPoint,
+    //                 stiffness: 1,
+    //                 damping: 0,
+    //                 length: 10 + dist(add(bottomPoint, core1.position), add(topPoint, core2.position)),
+    //                 render: {
+    //                     visible: true
+    //                 }
+    //             })
+    //         );
+    //         console.log("Created core structure constraint", coreStructureConstraints[coreStructureConstraints.length - 1]);
+    // }
 
     Matter.Events.on(engine, 'beforeUpdate', function () {
         if (mouseConstraint.constraint.bodyB && mouseConstraint.constraint.pointB) {
@@ -237,7 +377,7 @@ function openSimulator(chamber, callback = () => { }) {
             yForce = yForce - (bodySpeedY * mouseConstraintDamping);
 
             let xForce = 0;
-            if (!lockDragControls.checked || clickedBody.id === core.id) {
+            if (!lockDragControls.checked || clickedBody.id === coreHolder.id) {
                 xForce = -1 * mouseConstraintStiffnessX * ((mouseConstraint.body.position.x + mouseConstraint.constraint.pointB.x) - mouseConstraint.constraint.pointA.x);
                 const bodySpeedX = mouseConstraint.body.velocity.x;
                 xForce = xForce - (bodySpeedX * mouseConstraintDamping);
@@ -254,17 +394,17 @@ function openSimulator(chamber, callback = () => { }) {
     console.log("Added beforeUpdate listener to", engine);
 
     rotationForceConstraint = Constraint.create({
-        bodyA: core,
+        bodyA: coreHolder,
         pointB: {
             // Scale down tension dist based on canvas size
-            x: core.position.x + Math.max(100, (rotationOffset * canvas.width / 1400)),
-            y: core.position.y
+            x: coreHolder.position.x + Math.max(100, (rotationOffset * canvas.width / 1400)),
+            y: coreHolder.position.y
         },
         stiffness: rotationForceStiffness,
         damping: rotationForceDamping,
         length: 0,
         render: {
-            visible: false
+            visible: true
         }
     });
 
@@ -276,6 +416,8 @@ function openSimulator(chamber, callback = () => { }) {
             }
             switch (event.key) {
                 case "a":
+                    Engine.update(engine, 10);
+                    renderToCanvas();
                     rotationForceConstraint.pointB.x -= 75;
                     rotationForceConstraint.damping += .005;
                     // rotationForceConstraint.stiffness += .002;
@@ -318,36 +460,41 @@ function openSimulator(chamber, callback = () => { }) {
             }
         });
     }
-
-    const chamberCenterX = (chamber.lastRenderMetadata.left + chamber.lastRenderMetadata.right) / 2;
-    const chamberTop = canvas.height - (chamber.lastRenderMetadata.y + chamber.lastRenderMetadata.height);
-    let springConstraint = Constraint.create({
-        bodyA: pins[pins.length - 1],
-        pointB: {
-            x: chamberCenterX,
-            y: chamberTop
-        },
-        stiffness: springConstraintStiffness,
-        damping: springConstraintDamping,
-        length: chamber.lastRenderMetadata.height,
-        render: {
-            visible: false
-        }
-    });
     world.gravity.y = gravity;
-
-    const bodiesToAdd = [...pins, ground, core, bible];
-
+    const bodiesToAdd = [];
+    bodiesToAdd.push(...allPins);
+    // bodiesToAdd.push(...allGrounds);
+    bodiesToAdd.push(ground);
+    bodiesToAdd.push(...allBibles);
+    bodiesToAdd.push(...allCores);
+    // bodiesToAdd.push(...coreStructureConstraints);
     bodiesToAdd.push(rotationForceConstraint);
-    bodiesToAdd.push(springConstraint);
+    bodiesToAdd.push(coreHolder);
+    bodiesToAdd.push(bibleHolder);
+    // bodiesToAdd.push(core);
+
+    console.log("Pins by chamber", pinsByChamber);
+    for (let chamber of chambers) {
+        let chamberCenterX = (chamber.lastRenderMetadata.left + chamber.lastRenderMetadata.right) / 2;
+        let chamberTop = canvas.height - (chamber.lastRenderMetadata.y + chamber.lastRenderMetadata.height);
+        let pins = pinsByChamber[chamber.chamberIdx];
+        let springConstraint = Constraint.create({
+            bodyA: pins[pins.length - 1],
+            pointB: {
+                x: chamberCenterX,
+                y: chamberTop
+            },
+            stiffness: springConstraintStiffness,
+            damping: springConstraintDamping,
+            length: chamber.lastRenderMetadata.height,
+            render: {
+                visible: true
+            }
+        });
+        bodiesToAdd.push(springConstraint);
+    }
 
     Composite.add(world, bodiesToAdd);
-
-    // Runner.run(runner, engine);
-
-    // let frameCount = 0;
-
-    // render.canvas.hidden = false;
     renderToCanvas();
 
     if (!animationStarted) {
@@ -372,7 +519,6 @@ function openSimulator(chamber, callback = () => { }) {
             renderToCanvas();
         })();
     }
-
 }
 
 function renderToCanvas() {
@@ -434,7 +580,7 @@ function isOpen() {
 
 function closeSimulator() {
     currentChamber = null;
-    Runner.stop(runner);
+    // Runner.stop(runner);
     Engine.clear(engine);
     console.log("Cleared engine", engine);
     animationStarted = false;
@@ -449,4 +595,4 @@ function closeSimulator() {
     }
 }
 
-export default {isOpen, openSimulator, closeSimulator, getPickHeight, setPickHeight, getTensionDist, setTensionDist};
+export default { isOpen, openSimulator, closeSimulator, getPickHeight, setPickHeight, getTensionDist, setTensionDist };

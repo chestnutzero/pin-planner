@@ -458,7 +458,7 @@ export function simulateSelectedChamber() {
         let simulatorControls = document.getElementById("simulator-controls");
         simulatorControls.removeAttribute("hidden")
 
-        Simulator.openSimulator(selectedChamber, () => {
+        Simulator.openSimulator(chambers, () => {
             plannerOpts.removeAttribute("hidden")
             simulatorControls.setAttribute("hidden", true);
             resetPinSelection();
