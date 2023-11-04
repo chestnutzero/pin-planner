@@ -46,7 +46,7 @@ div#point-options > input {
   max-width: 100px;
 }
 
-button#simulate-chamber:not(:disabled) {
+button#simulate-chamber:not(:disabled), button#simulate-all-chambers {
   background-color:rgb(130, 226, 130);
 }
 

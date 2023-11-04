@@ -8,7 +8,7 @@ const chamberPaddingRatio = .15
 // 20 units per chamber
 const pinUnitHeightRatio = .05;
 const outlineWidth = 5;
-const pinPaddingX = 2;
+const pinPaddingX = 0;
 const pinPaddingY = 2;
 
 

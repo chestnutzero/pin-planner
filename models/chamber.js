@@ -9,6 +9,10 @@ export const MillingType = {
     Overmilled: "o"
 }
 
+// Chamfer size as percentage the outer chamber width
+const coreChamferSize = .03;
+const bibleChamferSize = .03;
+
 export class Chamber {
     constructor(pinStack = [], millingType=MillingType.None) {
         this.millingType = millingType;
@@ -89,6 +93,8 @@ export class Chamber {
         const innerX = (outerWidth - innerWidth) / 2;
         // Add a 15% padding between edge of countermilling and edge of chamber zone
         const outerX = .15 * innerX;
+        const fullHeight = height;
+        height = height - this.getAbsoluteChamferSize(outerWidth, coreChamferSize);
         switch (this.millingType) {
             case MillingType.Gin:
                 points.push(new Point(innerX, 0));
@@ -137,6 +143,12 @@ export class Chamber {
                 break;
         }
 
+        // if ([MillingType.Overmilled, MillingType.Threaded].indexOf(this.millingType) == -1) {
+        //     // Add a chamfer
+            const chamferSize = fullHeight - height;
+            points.push(new Point(points[points.length - 1].x - chamferSize, fullHeight));
+        // }
+
         let numPoints = points.length;
         // Now copy all left side points to the right side
         for (let i=numPoints - 1; i>=0; i--) {
@@ -161,7 +173,9 @@ export class Chamber {
                 }
                 break;
             default:
-                points.push(new Point(innerX, 0));
+                const chamferSize = this.getAbsoluteChamferSize(outerWidth, bibleChamferSize);
+                points.push(new Point(innerX - chamferSize, 0));
+                points.push(new Point(innerX, chamferSize));
                 points.push(new Point(innerX, height));
                 break;
         }
@@ -173,5 +187,9 @@ export class Chamber {
             points.push(new Point(outerWidth - point.x, point.y, point.lockRelativeToHeight));
         }
         return points;
+    }
+
+    getAbsoluteChamferSize(outerWidth, chamferSizePercentage) {
+        return chamferSizePercentage * outerWidth;
     }
 }

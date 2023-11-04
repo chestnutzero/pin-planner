@@ -458,13 +458,25 @@ export function simulateSelectedChamber() {
         let simulatorControls = document.getElementById("simulator-controls");
         simulatorControls.removeAttribute("hidden")
 
-        Simulator.openSimulator(chambers, () => {
+        Simulator.openSimulator([selectedChamber], () => {
             plannerOpts.removeAttribute("hidden")
             simulatorControls.setAttribute("hidden", true);
             resetPinSelection();
             redraw();
         });
     }
+}
+
+export function simulateAllChambers() {
+    plannerOpts.setAttribute("hidden", true);
+    let simulatorControls = document.getElementById("simulator-controls");
+    simulatorControls.removeAttribute("hidden")
+    Simulator.openSimulator(chambers, () => {
+        plannerOpts.removeAttribute("hidden")
+        simulatorControls.setAttribute("hidden", true);
+        resetPinSelection();
+        redraw();
+    });
 }
 
 // Pick one of the touches as the clientX and clientY to use

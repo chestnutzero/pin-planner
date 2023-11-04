@@ -5,47 +5,57 @@ const ctx = canvas.getContext("2d");
 
 const lockDragControls = document.getElementById("lock-drag-controls-vertically");
 
+const coreHue = 210;
+const bibleHue = (coreHue + 180) % 360;
+const colorOffset = 177;
 
 const chamberPaddingY = 10;
 // Leave a tiny gap between core and bible for realism
 // Gap between core and bible as percentage of chamber height
-const shearLineSpacing = 0;
-const chamberWidthJitter = 2;
+let shearLineSpacing = .003;
+// Amount by which a chamber can be too big, as percentage of width
+let chamberWidthJitter = .02;
+// Amount by which a pin can be too small, as percentage of pin width
+let pinWidthJitter = .02;
+let currentLevel = 5;
 
 // Settings that control spring forces and animation speeds
 const subSteps = 3;
 let rotationForceStiffness = .0008;
-const rotationForceDamping = .02;
-let rotationOffset = 150;
+const rotationForceDamping = .006;
+let rotationOffset = Math.max(50, (50 * canvas.width / 1400));
 
-// Standard pin area per sq unit that we base spring force calculations on
-// If a pin is smaller, we'll scale up its density, and scale down if it's larger
-const baselinePinArea = 400 * 200 / 7;
 // Same for chamber area, but this is for total chamber size, not per unit of height
 const targetCoreMass = 50;
+// Standard pin weight per unit of height
+// It's not perfect because some pins are heavier/more solid than others
+// But it's roughly reliable
+const pinWeightPerUnit = 3;
+// Give pins equal mass while dragging so picking doesn't change depending on the pin size
+const massWhileDragging = 50;
 
 const mouseConstraintStiffnessX = .05;
-const mouseConstraintStiffnessY = .08;
-const mouseConstraintDamping = .5;
+let mouseConstraintStiffnessY = .005;
+const mouseConstraintDamping = .05;
 const maxMouseForce = 15;
 
-const springConstraintStiffness = 0.00001;
+let springConstraintStiffness = 0.0006;
+// const springConstraintStiffness = 0.000006;
 const springConstraintDamping = 0.001;
-const friction = 0.04;
-const frictionStatic = .5;
-const gravity = 2;
+const friction = 0.004;
+const frictionStatic = .05;
+const gravity = 1;
 
 // module aliases
 const Engine = Matter.Engine,
     Render = Matter.Render,
-    Runner = Matter.Runner,
     Bodies = Matter.Bodies,
     Composite = Matter.Composite,
-    Constraint = Matter.Constraint,
-    Vector = Matter.Vector;
+    Constraint = Matter.Constraint;
 
 // create an engine
 // render.canvas.hidden = true;
+let currentChambers = [];
 let open = false;
 let onCloseCallback = () => { };
 
@@ -55,7 +65,8 @@ let onCloseCallback = () => { };
 // create runner
 // var runner = Runner.create();
 
-let currentChamber;
+
+let coreId, bibleId;
 // let pins;
 
 let rotationForceConstraint, pickForceConstraint, mouseConstraint;
@@ -67,6 +78,8 @@ let world;
 
 function getPinBody(pin) {
     const lastRenderMetadata = pin.lastRenderMetadata;
+    const pinWidthDelta = Math.random() * pinWidthJitter / 2 * lastRenderMetadata.width;
+    lastRenderMetadata.width -= pinWidthDelta;
     const vertices = pin.points.map(point => {
         return {
             x: point.x * lastRenderMetadata.width,
@@ -85,7 +98,8 @@ function getPinBody(pin) {
     // TODO: Remove hardcoded offset of 50
     Matter.Body.setPosition(body, {x: body.position.x, y: body.position.y + desiredBottom - pinBodyBottom});
     // Scale density with size - smaller pin footprint means more density, so our spring forces behave the same
-    Matter.Body.setDensity(body, .001 * baselinePinArea / (lastRenderMetadata.width * lastRenderMetadata.height / pin.pinHeight))
+    Matter.Body.setMass(body, pinWeightPerUnit * pin.pinHeight);
+    // Matter.Body.setDensity(body, .001 * baselinePinArea / (lastRenderMetadata.width * lastRenderMetadata.height / pin.pinHeight))
 
     console.debug("Built pin", body, "from vertices", vertices);
 
@@ -139,22 +153,20 @@ function getChamberBodies(chamber) {
             y: bibleBody.position.y + (midLine - shearLineSpacingPixels) - bibleBottom
         });
 
-    const coreBottom = coreBody.bounds.max.y;
-    const ground = Bodies.rectangle(canvas.width / 2, coreBottom + 50, canvas.width * 2, 100, { isStatic: true });
 
-    return [ground, coreBody, bibleBody];
+    return [coreBody, bibleBody];
 }
 
 function chamberVertices(innerWidth, outerWidth, height, vertices, openSideUp = true) {
     const points = [];
-    // const paddingX = (outerWidth - innerWidth) / 2;
-    let paddingX = 2;
+    const paddingX = (outerWidth - innerWidth) / 2;
+    // let paddingX = 2;
     let bottomPadding = openSideUp ? chamberPaddingY : 0;
     let topPadding = openSideUp ? 0 : chamberPaddingY;
-    const widthJitter = Math.random() * chamberWidthJitter - (chamberWidthJitter / 2);
+    const widthJitter = Math.random() * chamberWidthJitter / 2 * outerWidth;
     for (let i = 0; i < vertices.length / 2; i++) {
         points.push({
-            x: vertices[i].x + paddingX + widthJitter,
+            x: vertices[i].x + paddingX - widthJitter,
             y: vertices[i].y + bottomPadding
         });
     }
@@ -166,7 +178,7 @@ function chamberVertices(innerWidth, outerWidth, height, vertices, openSideUp = 
     }
     for (let i = vertices.length / 2; i < vertices.length; i++) {
         points.push({
-            x: vertices[i].x + paddingX - widthJitter,
+            x: vertices[i].x + paddingX + widthJitter,
             y: vertices[i].y + bottomPadding
         });
     }
@@ -180,7 +192,7 @@ function chamberVertices(innerWidth, outerWidth, height, vertices, openSideUp = 
     return points;
 }
 
-function buildCoreHolderBody(allCores, invertVertically = false) {
+function buildCoreHolderBody(allCores, invertVertically = false, isStatic = false) {
     const vertices = [];
     const firstCore = allCores[0];
     const lastCore = allCores[allCores.length - 1];
@@ -235,7 +247,7 @@ function buildCoreHolderBody(allCores, invertVertically = false) {
         y: lastCore.bounds.max.y + coreHolderPaddingY
     });
 
-    const coreHolderBody = Bodies.fromVertices(0, 0, vertices, { isStatic: false });
+    const coreHolderBody = Bodies.fromVertices(0, 0, vertices, { isStatic });
     if (invertVertically) {
         Matter.Body.scale(coreHolderBody, 1, -1);
         const targetMinX = firstCore.bounds.min.x - coreHolderPaddingX;
@@ -267,18 +279,56 @@ function buildCoreHolderBody(allCores, invertVertically = false) {
     return coreHolderBody;
 }
 
-function openSimulator(chambers, callback = () => { }) {
+function setDifficultyLevelAndReload(level) {
+    let chambers = currentChambers;
+    let callback = onCloseCallback;
+    closeSimulator(false);
+    openSimulator(chambers, callback, level);
+}
+
+function setDifficultyLevel(level) {
+    if (level > 10) {
+        console.log("Max difficulty level is 10, got value", level);
+        level = 10;
+    }
+    // At level 10, the chamber and pin tolerance is zero
+    // At level 0, it's 10%
+    // Each level up from 0 adds 1% tolerance
+    pinWidthJitter = .01 * (10 - level)
+    chamberWidthJitter = .01 * (10 - level);
+    shearLineSpacing = .0015 * (10 - level);
+    // A little more tension by default at lower levels to make up for the excess slop
+    rotationForceStiffness = .0004;
+    // rotationForceStiffness = .0004 + (.0002 * (10 - level));
+    // Stiffer spring is more realistic, but it makes holding up pins under tight tolerances extremely hard
+    springConstraintStiffness = .0001 + .00002 * level;
+    // At lower levels, you get more control with the mouse
+    mouseConstraintStiffnessY = .005 + .001 * (10 - level);
+    currentLevel = level;
+}
+
+function openSimulator(chambers, callback = () => { }, difficultyLevel = null) {
     engine = Engine.create();
+    currentChambers = chambers;
+    if (difficultyLevel) {
+        setDifficultyLevel(difficultyLevel);
+    } else if (currentLevel) {
+        // reuse whatever prev difficulty level was
+        setDifficultyLevel(currentLevel);
+    } else {
+        console.log("Unable to determine difficulty level, defaulting to 3");
+        setDifficultyLevel(3);
+    }
 
     // create a renderer
-    const render = Render.create({
-        element: document.body,
-        engine: engine,
-        options: {
-            wireframes: false
-        }
-    });
-    Matter.Render.run(render);
+    // const render = Render.create({
+    //     element: document.body,
+    //     engine: engine,
+    //     options: {
+    //         wireframes: false
+    //     }
+    // });
+    // Matter.Render.run(render);
 
     world = engine.world;
     onCloseCallback = callback;
@@ -292,9 +342,7 @@ function openSimulator(chambers, callback = () => { }) {
     let allPins = [];
     let pinsByChamber = {};
     for (let chamber of chambers) {
-        const [currGround, currCore, currBible] = getChamberBodies(chamber);
-        console.log("Built bodies", currGround, currCore, currBible, "from chamebr", chamber);
-        // allGrounds.push(currGround);
+        const [currCore, currBible] = getChamberBodies(chamber);
         allCores.push(currCore);
         allBibles.push(currBible);
         pinsByChamber[chamber.chamberIdx] = [];
@@ -305,100 +353,80 @@ function openSimulator(chambers, callback = () => { }) {
         }
     }
     const coreHolder = buildCoreHolderBody(allCores);
-    const bibleHolder = buildCoreHolderBody(allBibles, true);
+    const bibleHolder = buildCoreHolderBody(allBibles, true, true);
     Matter.Body.setStatic(bibleHolder, true);
-    // TODO: Reflect this across the x axis, then move vertically to match the shear line
     
+    const allCoreParts = [];
+    for (let core of allCores) {
+        allCoreParts.push(...getParts(core));
+    }
+    const core = Matter.Body.create({
+        parts: [...getParts(coreHolder), ...allCoreParts]
+    });
+    coreId = core.id;
+    Matter.Body.setMass(core, targetCoreMass);
+
+    const allBibleParts = [];
+    for (let bible of allBibles) {
+        allBibleParts.push(...getParts(bible));
+    }
+    const bible = Matter.Body.create({
+        parts: [...getParts(bibleHolder), ...allBibleParts],
+        isStatic: true
+    });
+    bibleId = bible.id;
 
     const ground = Bodies.rectangle(canvas.width/2, coreHolder.bounds.max.y + 250, canvas.width, 500, { isStatic: true });
-    // Matter.Body.setParts(core, allCores, false);
-    // Matter.Body.setParts(bible, allBibles, false);
     mouseConstraint = Matter.MouseConstraint.create(engine, {
         element: canvas,
     });
 
-    let coreStructureConstraints = [];
-    // const dist = (a,b) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
-    // const sub = (a,b) => {
-    //     return {x: a.x - b.x, y: a.y - b.y};
-    // }
-    // const add = (a, b) => {
-    //     return {x: a.x + b.x, y: b.y + b.y};
-    // };
-    // for (let i=0; i<allCores.length - 1; i++) {
-    //         const core1 = allCores[i];
-    //         const core2 = allCores[i + 1];
-    //         const coreHeight = core1.bounds.max.y - core1.bounds.min.y
-    //         const coreWidth = core1.bounds.max.x - core1.bounds.min.x;
-    //         const topPoint = {
-    //             x: 0,
-    //             y: coreHeight / 3
-    //         };
-    //         const bottomPoint = {
-    //             x: 0,
-    //             y: 0 - (coreHeight / 3)
-    //         };
-    //         coreStructureConstraints.push(
-    //             Constraint.create({
-    //                 bodyA: core1,
-    //                 bodyB: core2,
-    //                 pointA: topPoint,
-    //                 pointB: bottomPoint,
-    //                 stiffness: 1,
-    //                 damping: 0,
-    //                 length: 10 + dist(add(topPoint, core1.position), add(bottomPoint, core2.position)),
-    //                 render: {
-    //                     visible: true
-    //                 }
-    //             })
-    //         );
-    //         coreStructureConstraints.push(
-    //             Constraint.create({
-    //                 bodyA: core1,
-    //                 bodyB: core2,
-    //                 pointA: bottomPoint,
-    //                 pointB: topPoint,
-    //                 stiffness: 1,
-    //                 damping: 0,
-    //                 length: 10 + dist(add(bottomPoint, core1.position), add(topPoint, core2.position)),
-    //                 render: {
-    //                     visible: true
-    //                 }
-    //             })
-    //         );
-    //         console.log("Created core structure constraint", coreStructureConstraints[coreStructureConstraints.length - 1]);
-    // }
-
+    let lastMovedBody = null;
+    let lastMovedBodyMass = null;
     Matter.Events.on(engine, 'beforeUpdate', function () {
         if (mouseConstraint.constraint.bodyB && mouseConstraint.constraint.pointB) {
             const clickedBody = mouseConstraint.constraint.bodyB;
+
+            if (lastMovedBody == null) {
+                lastMovedBody = clickedBody;
+                lastMovedBodyMass = clickedBody.mass;
+                Matter.Body.setMass(clickedBody, massWhileDragging);
+            }
+
             let yForce = -1 * mouseConstraintStiffnessY * ((mouseConstraint.body.position.y + mouseConstraint.constraint.pointB.y) - mouseConstraint.constraint.pointA.y);
             const bodySpeedY = mouseConstraint.body.velocity.y;
             yForce = yForce - (bodySpeedY * mouseConstraintDamping);
 
             let xForce = 0;
-            if (!lockDragControls.checked || clickedBody.id === coreHolder.id) {
+            if (!lockDragControls.checked || clickedBody.id === core.id) {
                 xForce = -1 * mouseConstraintStiffnessX * ((mouseConstraint.body.position.x + mouseConstraint.constraint.pointB.x) - mouseConstraint.constraint.pointA.x);
                 const bodySpeedX = mouseConstraint.body.velocity.x;
                 xForce = xForce - (bodySpeedX * mouseConstraintDamping);
             }
 
-            xForce = Math.min(15, Math.max(-15, xForce));
-            yForce = Math.min(15, Math.max(-15, yForce));
+            xForce = Math.min(maxMouseForce, Math.max(-1 * maxMouseForce, xForce));
+            yForce = Math.min(maxMouseForce, Math.max(-1 * maxMouseForce, yForce));
 
 
-            console.log("xforce, yforce", xForce, yForce);
+            console.debug("xforce, yforce", xForce, yForce);
             Matter.Body.applyForce(clickedBody, clickedBody.position, { x: xForce, y: yForce });
+        } else {
+            if (lastMovedBody && lastMovedBodyMass) {
+                Matter.Body.setMass(lastMovedBody, lastMovedBodyMass);
+                lastMovedBody = null;
+                lastMovedBodyMass = null;
+            }
         }
     });
     console.log("Added beforeUpdate listener to", engine);
 
+    rotationOffset = 7 * chambers[0].lastRenderMetadata.width / 8;
     rotationForceConstraint = Constraint.create({
-        bodyA: coreHolder,
+        bodyA: core,
         pointB: {
             // Scale down tension dist based on canvas size
-            x: coreHolder.position.x + Math.max(100, (rotationOffset * canvas.width / 1400)),
-            y: coreHolder.position.y
+            x: core.position.x + rotationOffset,
+            y: core.position.y
         },
         stiffness: rotationForceStiffness,
         damping: rotationForceDamping,
@@ -416,23 +444,24 @@ function openSimulator(chambers, callback = () => { }) {
             }
             switch (event.key) {
                 case "a":
-                    Engine.update(engine, 10);
-                    renderToCanvas();
-                    rotationForceConstraint.pointB.x -= 75;
-                    rotationForceConstraint.damping += .005;
-                    // rotationForceConstraint.stiffness += .002;
+                    rotationForceConstraint.pointB.x -= rotationOffset / 2;
+                    rotationForceConstraint.stiffness -= .0002;
+                    // rotationForceConstraint.damping += .005;
                     break;
                 case "s":
-                    rotationForceConstraint.pointB.x -= 75;
-                    rotationForceConstraint.damping += .005;
+                    rotationForceConstraint.pointB.x -= rotationOffset / 2;
+                    rotationForceConstraint.stiffness -= .0001;
+                    // rotationForceConstraint.damping += .005;
                     break;
                 case "d":
-                    rotationForceConstraint.pointB.x += 75;
-                    rotationForceConstraint.damping += .005;
+                    // rotationForceConstraint.pointB.x += 75;
+                    // rotationForceConstraint.damping += .005;
+                    rotationForceConstraint.stiffness += .002;
                     break;
                 case "f":
-                    rotationForceConstraint.pointB.x += 75;
-                    rotationForceConstraint.damping += .005;
+                    rotationForceConstraint.stiffness += .002;
+                    // rotationForceConstraint.pointB.x += 75;
+                    // rotationForceConstraint.damping += .005;
                     // rotationForceConstraint.stiffness += .002;
                     break;
             }
@@ -440,40 +469,37 @@ function openSimulator(chambers, callback = () => { }) {
         document.addEventListener("keyup", (event) => {
             switch (event.key) {
                 case "a":
-                    rotationForceConstraint.pointB.x += 75;
-                    rotationForceConstraint.damping -= .005;
+                    rotationForceConstraint.pointB.x += rotationOffset / 2;
+                    rotationForceConstraint.stiffness += .0002;
+                    // rotationForceConstraint.damping -= .005;
                     // rotationForceConstraint.stiffness -= .002;
                     break;
                 case "s":
-                    rotationForceConstraint.pointB.x += 75;
-                    rotationForceConstraint.damping -= .005;
+                    rotationForceConstraint.pointB.x += rotationOffset / 2;
+                    rotationForceConstraint.stiffness += .0001;
+                    // rotationForceConstraint.damping -= .005;
                     break;
                 case "d":
-                    rotationForceConstraint.pointB.x -= 75;
-                    rotationForceConstraint.damping -= .005;
+                    // rotationForceConstraint.pointB.x -= 75;
+                    // rotationForceConstraint.damping -= .005;
+                    rotationForceConstraint.stiffness -= .002;
                     break;
                 case "f":
-                    rotationForceConstraint.pointB.x -= 75;
-                    rotationForceConstraint.damping -= .005;
-                    // rotationForceConstraint.stiffness -= .002;
+                    // rotationForceConstraint.pointB.x -= 75;
+                    // rotationForceConstraint.damping -= .005;
+                    rotationForceConstraint.stiffness -= .002;
                     break;
             }
         });
     }
-    world.gravity.y = gravity;
+    engine.gravity.y = gravity;
     const bodiesToAdd = [];
     bodiesToAdd.push(...allPins);
-    // bodiesToAdd.push(...allGrounds);
     bodiesToAdd.push(ground);
-    bodiesToAdd.push(...allBibles);
-    bodiesToAdd.push(...allCores);
-    // bodiesToAdd.push(...coreStructureConstraints);
+    bodiesToAdd.push(bible);
     bodiesToAdd.push(rotationForceConstraint);
-    bodiesToAdd.push(coreHolder);
-    bodiesToAdd.push(bibleHolder);
-    // bodiesToAdd.push(core);
+    bodiesToAdd.push(core);
 
-    console.log("Pins by chamber", pinsByChamber);
     for (let chamber of chambers) {
         let chamberCenterX = (chamber.lastRenderMetadata.left + chamber.lastRenderMetadata.right) / 2;
         let chamberTop = canvas.height - (chamber.lastRenderMetadata.y + chamber.lastRenderMetadata.height);
@@ -533,13 +559,19 @@ function renderToCanvas() {
 
     for (var i = 0; i < bodies.length; i += 1) {
         const body = bodies[i];
-        const decompBodies = body.parts;
-        ctx.fillStyle = `hsl(${(body.id * 24) % 360}, 70%, 60%)`;
+        const decompBodies = getParts(body);
+
+        let hue;
+        if (body.id == coreId) {
+            hue = coreHue;
+        } else if (body.id === bibleId) {
+            hue = bibleHue;
+        } else {
+            hue = (i * colorOffset + 90) % 360;
+        }
+        ctx.fillStyle = `hsl(${hue}, 70%, 60%)`;
         ctx.beginPath();
         for (var j = 0; j < decompBodies.length; j += 1) {
-            if (body.parts.length > 1 && decompBodies[j].id == body.id) {
-                continue;
-            }
             var vertices = decompBodies[j].vertices;
 
             ctx.moveTo(vertices[0].x, canvas.height - vertices[0].y);
@@ -578,21 +610,31 @@ function isOpen() {
     return open;
 }
 
-function closeSimulator() {
-    currentChamber = null;
-    // Runner.stop(runner);
+function closeSimulator(executeCallback = true) {
     Engine.clear(engine);
-    console.log("Cleared engine", engine);
     animationStarted = false;
     open = false;
-    onCloseCallback();
+    currentChambers = [];
+    if (executeCallback) {
+        onCloseCallback();
+    }
     if (mouseConstraint) {
-        console.log("Mouseconstraint:", mouseConstraint);
-        console.log("Attempting remove event listener", mouseConstraint.mouse.mousemove, "from element", mouseConstraint.mouse.element);
         mouseConstraint.mouse.element.removeEventListener("touchmove", mouseConstraint.mouse.mousemove);
         mouseConstraint.mouse.element.removeEventListener("touchstart", mouseConstraint.mouse.mousedown);
         mouseConstraint.mouse.element.removeEventListener("touchend", mouseConstraint.mouse.mouseup);
     }
 }
 
-export default { isOpen, openSimulator, closeSimulator, getPickHeight, setPickHeight, getTensionDist, setTensionDist };
+function getParts(body) {
+    if (body.parts && body.parts.length > 1) {
+        return body.parts.filter(part => part.id != body.id);
+    } else {
+        return [body];
+    }
+}
+
+function getDifficultyLevel() {
+    return currentLevel;
+}
+
+export default { isOpen, openSimulator, closeSimulator, getPickHeight, setPickHeight, getTensionDist, setTensionDist, setDifficultyLevelAndReload, getDifficultyLevel };
