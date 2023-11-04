@@ -79,10 +79,10 @@ let world;
 function getPinBody(pin) {
     const lastRenderMetadata = pin.lastRenderMetadata;
     const pinWidthDelta = Math.random() * pinWidthJitter / 2 * lastRenderMetadata.width;
-    lastRenderMetadata.width -= pinWidthDelta;
+    const widthToUse = lastRenderMetadata.width - pinWidthDelta;
     const vertices = pin.points.map(point => {
         return {
-            x: point.x * lastRenderMetadata.width,
+            x: point.x * widthToUse,
             y: (1 - point.y) * lastRenderMetadata.height
         }
     });
