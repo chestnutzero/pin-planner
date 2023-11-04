@@ -49,6 +49,7 @@
 
     <div id="planner-options">
         <div id="metacontrols">
+            <button type="button" id="simulate-all-chambers">Simulate picking!</button>
             <button type="button" id="undo" disabled>Undo</button>
             <button type="button" id="redo" disabled>Redo</button>
             <button type="button" id="reset">Reset</button>
@@ -89,6 +90,30 @@
         <button type="button" id="close-simulator">Exit simulation</button>
         <label for="mirrored-editor">Lock pin dragging to vertical only</label>
         <input type="checkbox" name="lock-drag-controls-vertically" id="lock-drag-controls-vertically" checked>
+        <label for="difficulty">Difficulty level</label>
+        <select name="difficulty" id="difficulty"></select>
+        <p>Tension controls:
+            <ul>
+                <li>
+                    a: Counter-rotate slowly
+                </li>
+                <li>
+                    s: Counter-rotate slightly quicker
+                </li>
+                <li>
+                    d: Increase tension strength
+                </li>
+                <li>
+                    f: Increase tension strength
+                </li>
+            </ul>
+            You can hold multiple buttons at once to compound their effects.
+            Most of the time, just holding one of a or s will decrease tension a little but not actively counter-rotate.
+            </br>
+            Holding all four at once quickly puts tension at neutral.
+            </br>
+            Float picking: Hold "s" to counter-rotate slightly, then tap "a" carefully to control the tension position.
+        </p>
     </div>
 
     <script type="module" src="main.js" type="text/javascript"></script>

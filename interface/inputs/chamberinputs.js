@@ -1,4 +1,4 @@
-import { setChamberMillingType, getSelectedChamber, addChamber, deleteChamber, redraw, updateUrl, simulateSelectedChamber } from "../../main.js";
+import { setChamberMillingType, getSelectedChamber, addChamber, deleteChamber, redraw, updateUrl, simulateSelectedChamber, simulateAllChambers } from "../../main.js";
 import PinFactory from "../../models/pinfactory.js";
 import { Chamber, MillingType } from "../../models/chamber.js";
 import Simulator from "../../simulator/simulator.js";
@@ -23,6 +23,10 @@ export function registerChamberListeners() {
 
     document.getElementById("simulate-chamber").addEventListener("click", () => {
         simulateSelectedChamber();
+    });
+
+    document.getElementById("simulate-all-chambers").addEventListener("click", () => {
+        simulateAllChambers();
     });
 
     millingTypeSelect.addEventListener("change", () => {
