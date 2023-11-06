@@ -2,21 +2,25 @@
 <html>
 
 <head>
-    <title>Pin Visualizer</title>
+    <title>Lock Builder</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./style.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:title" content="Lock Builder" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://lockbuilder.io" />
 </head>
+
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-E8SLC15CHB"></script>
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
 
-  gtag('config', 'G-E8SLC15CHB');
+    gtag('config', 'G-E8SLC15CHB');
 </script>
 
 <body>
@@ -93,39 +97,39 @@
         <label for="difficulty">Difficulty level</label>
         <select name="difficulty" id="difficulty"></select>
         <p>Tension controls:
-            <ul>
-                <li>
-                    a: Counter-rotate slowly
-                </li>
-                <li>
-                    s: Counter-rotate slightly quicker
-                </li>
-                <li>
-                    d: Increase tension strength
-                </li>
-                <li>
-                    f: Increase tension strength
-                </li>
-            </ul>
-            You can hold multiple buttons at once to compound their effects.
-            Most of the time, just holding one of a or s will decrease tension a little but not actively counter-rotate.
-            </br>
-            Holding all four at once quickly puts tension at neutral.
-            </br>
-            Float picking: Hold "s" to counter-rotate slightly, then tap "a" carefully to control the tension position.
+        <ul>
+            <li>
+                a: Counter-rotate slowly
+            </li>
+            <li>
+                s: Counter-rotate slightly quicker
+            </li>
+            <li>
+                d: Increase tension strength
+            </li>
+            <li>
+                f: Increase tension strength
+            </li>
+        </ul>
+        You can hold multiple buttons at once to compound their effects.
+        Most of the time, just holding one of a or s will decrease tension a little but not actively counter-rotate.
+        </br>
+        Holding all four at once quickly puts tension at neutral.
+        </br>
+        Float picking: Hold "s" to counter-rotate slightly, then tap "a" carefully to control the tension position.
         </p>
     </div>
 
     <script type="module" src="main.js" type="text/javascript"></script>
     <script src="lib/matter.min.js" type="text/javascript"></script>
     <script src="lib/decomp.min.js" type="text/javascript"></script>
-    </body>
-    <footer>
-        <a href="https://github.com/chestnutzero/pin-planner">
-            View source on GitHub
-            <img src="images/github-mark.svg" alt="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png"
-                width="16" height="16">
-        </a>
-    </footer>
+</body>
+<footer>
+    <a href="https://github.com/chestnutzero/pin-planner">
+        View source on GitHub
+        <img src="images/github-mark.svg" alt="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png"
+            width="16" height="16">
+    </a>
+</footer>
 
 </html>
